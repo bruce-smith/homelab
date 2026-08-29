@@ -1,0 +1,13 @@
+# Nix
+result
+result-*
+/nix
+
+# Secrets (if added later)
+.secrets/
+*.age
+secrets.yaml
+
+# Editor/OS
+.DS_Store
+*.swp
