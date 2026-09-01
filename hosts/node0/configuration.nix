@@ -144,4 +144,7 @@
   # (e.g. man configuration.nix or on https://nixos.org/nixos/options.html).
   system.stateVersion = "24.11"; # Did you read the comment?
 
+  # k3s cluster — enable on all nodes (wired gigabit since 2026-09-01)
+  homelab.k3s.enable = true;
+
 }

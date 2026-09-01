@@ -1,18 +1,13 @@
-# k3s cluster module — STUB
+# k3s cluster module — ENABLED
 #
-# Disabled by default (homelab.k3s.enable = false).
-# ENABLE per node ONCE the TL-SG108 switch + UE306 adapters are installed and
-# every node is on wired Ethernet (WiFi is not reliable enough for etcd).
+# homelab.k3s.enable = true on all nodes (wired gigabit, 2026-09-01).
 #
 #   - node0 (dv6)          -> role = "server"  (control plane)
 #   - node1 (Danny's HP15) -> role = "agent"   (worker)
 #   - node2 (Grandpa's)    -> role = "agent"   (worker)
 #
-# To enable: set homelab.k3s.enable = true in each node's config, fill in the
-# shared token, then:
-#   nixos-rebuild switch --flake .#node0 --target-host node0@node0
-#   nixos-rebuild switch --flake .#node1 --target-host node1@node1
-#   nixos-rebuild switch --flake .#node2 --target-host node2@node2
+# TODO(secrets): move the shared token to sops-nix before publishing this repo
+# publicly. See dreamsofautonomy/homelab for the sops-nix pattern.
 
 { config, lib, pkgs, ... }:
 
@@ -36,18 +31,20 @@ in
 
       # TODO(secrets): generate once with `openssl rand -hex 16` and move to
       # sops-nix (the video stores it via sops; don't hardcode long-term).
-      token = "REPLACE_WITH_SHARED_K3S_TOKEN";
+      token = "ecf950249dd7bb7a953b7e1373897937";
 
       # Agents join the server by name (resolves via router DHCP / hosts).
-      serverAddr = if isServer then null else "https://node0:6443";
+      # serverAddr is only set on agents — it's a plain string option.
+      serverAddr = lib.mkIf (!isServer) "https://node0:6443";
 
       # Save RAM on the weaker laptops (video approach):
       #   - disable built-in traefik ingress  (we'll use nginx-ingress-controller)
       #   - disable built-in servicelb       (we'll use MetalLB)
-      extraFlags = toString [
+      # NOTE: --disable is a SERVER-only flag in k3s; agents reject it.
+      extraFlags = lib.mkIf isServer (toString [
         "--disable" "traefik"
         "--disable" "servicelb"
-      ];
+      ]);
     };
 
     # Open the ports k3s needs. This nixpkgs version has no openFirewall option
