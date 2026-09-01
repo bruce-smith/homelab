@@ -11,3 +11,4 @@ secrets.yaml
 # Editor/OS
 .DS_Store
 *.swp
+helm/tmp/
