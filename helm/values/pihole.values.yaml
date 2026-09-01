@@ -1,22 +1,25 @@
 ---
 # Pi-hole values — adapted 2026-09-01 from dreamsofautonomy/homelab
 # Network: 192.168.3.0/24 (was 192.168.1.0/24 in the video)
+# IP scheme: Traefik=.240, Pi-hole=.241 (separate LB IPs — MetalLB requires
+# shared-IP services to use the SAME sharing key; simpler to give pihole its own).
 DNS1:
   192.168.3.1
 persistentVolumeClaim:
   enabled: true
+  storageClass: longhorn
 ingress:
   enabled: true
-  ingressClassName: traefik
+  ingressClassName: traefik-internal
   hosts:
     - "pihole.home"
 serviceWeb:
-  loadBalancerIP: 192.168.3.240
+  loadBalancerIP: 192.168.3.241
   annotations:
     metallb.universe.tf/allow-shared-ip: pihole-svc
   type: LoadBalancer
 serviceDns:
-  loadBalancerIP: 192.168.3.240
+  loadBalancerIP: 192.168.3.241
   annotations:
     metallb.universe.tf/allow-shared-ip: pihole-svc
   type: LoadBalancer
