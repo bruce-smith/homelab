@@ -62,7 +62,16 @@ in
       enable = true;
       name = "iqn.2026-08.homelab:${config.networking.hostName}";
     };
-    environment.systemPackages = with pkgs; [ openiscsi ];
+    environment.systemPackages = with pkgs; [ openiscsi nfs-utils ];
+
+    # Longhorn's environment check runs `nsenter ... iscsiadm` and looks for
+    # it at FHS paths (/usr/bin/iscsiadm, /usr/sbin/...). NixOS keeps binaries
+    # in /run/current-system/sw/bin, so the check fails. Create FHS symlinks.
+    systemd.tmpfiles.rules = [
+      "L+ /usr/bin/iscsiadm - - - - /run/current-system/sw/bin/iscsiadm"
+      "L+ /usr/sbin/iscsiadm - - - - /run/current-system/sw/bin/iscsiadm"
+      "L+ /usr/bin/nsenter - - - - /run/current-system/sw/bin/nsenter"
+    ];
 
     # ── node role-specific tweaks ────────────────────────────────────────
     # Server keeps its local storage for etcd; workers can be tainted later.
