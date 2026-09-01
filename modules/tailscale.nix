@@ -16,6 +16,11 @@
     # "server" = advertise routes/exit node; "client" = use other exit nodes.
     # "both" lets each node both offer and consume exit nodes.
     useRoutingFeatures = "both";
+    # Advertise the LAN subnet into the tailnet so remote devices can reach
+    # MetalLB services (Pi-hole .241, Traefik .240, etc.) directly.
+    # NOTE: node0 is the designated subnet router; must be approved once in
+    # the Tailscale admin console (Machines → node0 → Edit route settings).
+    extraUpFlags = [ "--advertise-routes=192.168.3.0/24" ];
   };
 
   # Make the `tailscale` CLI available to users.
