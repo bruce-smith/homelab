@@ -1,0 +1,17 @@
+---
+# Traefik values — replaces ingress-nginx (retired 2026-03).
+# ingressClass name kept as <name>-internal to mirror the video's nginx-internal.
+ingressClass:
+  enabled: true
+  name: traefik-internal
+  isDefaultClass: true
+service:
+  enabled: true
+  annotations:
+    metallb.universe.tf/allow-shared-ip: traefik-svc
+  spec:
+    type: LoadBalancer
+    loadBalancerIP: 192.168.3.240
+# Dashboard off (reachable via kubectl port-forward if ever needed).
+api:
+  dashboard: false

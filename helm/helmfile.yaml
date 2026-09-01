@@ -1,0 +1,77 @@
+# ============================================================
+# Homelab services — helmfile
+# Modernized 2026-09-01 from dreamsofautonomy/homelab (video) +
+# updated chart versions + ingress-nginx replaced with Traefik.
+#
+#  - Longhorn    (distributed storage)    v1.12.1
+#  - MetalLB     (bare-metal LB)          v0.16.1
+#  - Pi-hole     (ad blocking + DNS)      v2.38.0
+#  - external-dns(pihole DNS sync)        v1.21.1
+#  - Traefik     (ingress)                v41.4.0  <-- replaces ingress-nginx (retired 2026-03)
+#
+# IP scheme: LAN = 192.168.3.0/24
+#   - EdgeOS DHCP reservations: node0 .126, node1 .166, node2 .189
+#   - MetalLB pool:             192.168.3.240-192.168.3.249
+#   - Pi-hole shared IP:        192.168.3.240
+#   - Traefik shared IP:        192.168.3.240
+# ============================================================
+
+repositories:
+  - name: longhorn
+    url: https://charts.longhorn.io
+  - name: metallb
+    url: https://metallb.github.io/metallb
+  - name: mojo2600
+    url: https://mojo2600.github.io/pihole-kubernetes
+  - name: external-dns
+    url: https://kubernetes-sigs.github.io/external-dns/
+  - name: traefik
+    url: https://traefik.github.io/charts
+
+helmDefaults:
+  createNamespace: true
+  wait: true
+  timeout: 600
+
+releases:
+  # ---- Distributed storage ----
+  - name: longhorn
+    namespace: longhorn-system
+    chart: longhorn/longhorn
+    version: 1.12.1
+
+  # ---- Bare-metal load balancer ----
+  # MetalLB needs its IPAddressPool + L2Advertisement CRs, applied after install.
+  - name: metallb
+    namespace: metallb-system
+    chart: metallb/metallb
+    version: 0.16.1
+    hooks:
+      - events: ["postsync"]
+        showlogs: true
+        command: kubectl
+        args: ["apply", "--server-side", "-f", "manifests/metallb-pool.yaml"]
+
+  # ---- DNS sinkhole (ad-blocking) ----
+  - name: pihole
+    namespace: pihole-system
+    chart: mojo2600/pihole
+    version: 2.38.0
+    values:
+      - values/pihole.values.yaml
+
+  # ---- Automatic DNS records for the cluster ----
+  - name: external-dns
+    namespace: pihole-system
+    chart: external-dns/external-dns
+    version: 1.21.1
+    values:
+      - values/externaldns.values.yaml
+
+  # ---- Ingress controller (replaces retired ingress-nginx) ----
+  - name: traefik
+    namespace: traefik-system
+    chart: traefik/traefik
+    version: 41.4.0
+    values:
+      - values/traefik.values.yaml
