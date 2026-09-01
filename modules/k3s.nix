@@ -6,10 +6,11 @@
 #   - node1 (Danny's HP15) -> role = "agent"   (worker)
 #   - node2 (Grandpa's)    -> role = "agent"   (worker)
 #
-# TODO(secrets): move the shared token to sops-nix before publishing this repo
-# publicly. See dreamsofautonomy/homelab for the sops-nix pattern.
+# Secrets moved to sops-nix (2026-09-01): k3s token is decrypted from
+# secrets/k3s-token.yaml at activation into /run/secrets/k3s-token, and
+# referenced via tokenFile (never appears in the world-readable nix store).
 
-{ config, lib, pkgs, ... }:
+{ config, lib, pkgs, secretsFile, ... }:
 
 let
   isServer = config.networking.hostName == "node0";
@@ -29,22 +30,30 @@ in
       enable = true;
       role = if isServer then "server" else "agent";
 
-      # TODO(secrets): generate once with `openssl rand -hex 16` and move to
-      # sops-nix (the video stores it via sops; don't hardcode long-term).
-      token = "ecf950249dd7bb7a953b7e1373897937";
+      # Read the shared token from sops-nix's decrypted file (see below).
+      tokenFile = config.sops.secrets."k3s-token".path;
 
       # Agents join the server by name (resolves via router DHCP / hosts).
       # serverAddr is only set on agents — it's a plain string option.
       serverAddr = lib.mkIf (!isServer) "https://node0:6443";
 
       # Save RAM on the weaker laptops (video approach):
-      #   - disable built-in traefik ingress  (we'll use nginx-ingress-controller)
-      #   - disable built-in servicelb       (we'll use MetalLB)
+      #   - disable built-in traefik ingress  (we use MetalLB + Traefik via helmfile)
+      #   - disable built-in servicelb       (we use MetalLB)
       # NOTE: --disable is a SERVER-only flag in k3s; agents reject it.
       extraFlags = lib.mkIf isServer (toString [
         "--disable" "traefik"
         "--disable" "servicelb"
       ]);
+    };
+
+    # ── sops-nix: decrypt secrets at activation ──────────────────────────
+    sops = {
+      # Resolved against the flake root (passed in via specialArgs) — using a
+      # module-relative path here would break because modules live in the store.
+      defaultSopsFile = secretsFile;
+      age.keyFile = "/etc/sops/age/keys.txt";
+      secrets."k3s-token" = { };
     };
 
     # Open the ports k3s needs. This nixpkgs version has no openFirewall option

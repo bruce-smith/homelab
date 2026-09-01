@@ -53,12 +53,23 @@ releases:
         args: ["apply", "--server-side", "-f", "manifests/metallb-pool.yaml"]
 
   # ---- DNS sinkhole (ad-blocking) ----
+  # adminPassword is sops-encrypted in values/pihole.sops.yaml. Helmfile's
+  # auto-sops-detection is unreliable on Windows, so a presync hook decrypts it
+  # to a gitignored temp file (values/.pihole-secrets.yaml) before rendering.
   - name: pihole
     namespace: pihole-system
     chart: mojo2600/pihole
     version: 2.38.0
     values:
       - values/pihole.values.yaml
+      - values/.pihole-secrets.yaml
+    hooks:
+      - events: ["presync"]
+        showlogs: true
+        command: sh
+        args:
+          - -c
+          - "sops -d values/pihole.sops.yaml > values/.pihole-secrets.yaml"
 
   # ---- Automatic DNS records for the cluster ----
   - name: external-dns

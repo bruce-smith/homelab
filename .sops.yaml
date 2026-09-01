@@ -1,0 +1,18 @@
+# SOPS encryption rules for the homelab repo.
+# Encrypt with the homelab age key. Decryption happens:
+#   - on the NixOS nodes at build time (sops-nix module)
+#   - on the main PC at `helmfile apply` time (helmfile's built-in sops support)
+#
+# To add a new secret:
+#   sops secrets/foo.yaml            (interactive editor)
+#   sops -e secrets/foo.yaml > ...   (or edit in place)
+creation_rules:
+  # Secrets consumed by sops-nix on the nodes
+  - path_regex: .*[/\\]?secrets[/\\].*\.ya?ml$
+    age: >-
+      age1ywtmcludzu975w8j0csajllysn2frv6hdwwq74n575cjuytt5v9smtjfx5
+
+  # Values files consumed by helmfile (pihole admin password etc.)
+  - path_regex: .*[/\\]?helm[/\\]values[/\\].*\.sops\.ya?ml$
+    age: >-
+      age1ywtmcludzu975w8j0csajllysn2frv6hdwwq74n575cjuytt5v9smtjfx5

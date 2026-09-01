@@ -12,3 +12,4 @@ secrets.yaml
 .DS_Store
 *.swp
 helm/tmp/
+helm/values/.pihole-secrets.yaml
