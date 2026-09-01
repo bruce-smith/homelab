@@ -10,9 +10,10 @@ sources:
   - service
   - ingress
 # Only sync Ingresses that use the Traefik ingressClass (was nginx-internal).
+# Must match the class name exactly: Traefik values set ingressClass.name = traefik-internal
 # --pihole-api-version=6: Pi-hole v6 (chart installs 2026.07) — v5 API is deprecated.
 extraArgs:
-  ingress-class: traefik
+  ingress-class: traefik-internal
   pihole-api-version: "6"
 env:
   - name: EXTERNAL_DNS_PIHOLE_SERVER
