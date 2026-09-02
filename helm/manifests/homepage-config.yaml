@@ -60,12 +60,12 @@ data:
   bookmarks.yaml: |
     - GitHub:
         - Homepage Repo:
-            icon: github
-            href: https://github.com/gethomepage/homepage
+            - icon: github
+              href: https://github.com/gethomepage/homepage
     - Homelab:
         - dreamsofautonomy:
-            icon: github
-            href: https://github.com/dreamsofautonomy/homelab
+            - icon: github
+              href: https://github.com/dreamsofautonomy/homelab
   kubernetes.yaml: |
     mode: cluster
   docker.yaml: ""
