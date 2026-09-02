@@ -70,13 +70,13 @@ data:
               href: https://watch.plex.tv/me
     - Productivity:
         - Google Keep:
-            - icon: googlekeep
+            - icon: google-keep
               href: https://keep.google.com/
         - Google Drive:
-            - icon: googledrive
+            - icon: google-drive
               href: https://drive.google.com/drive/home
         - Google Docs:
-            - icon: googledocs
+            - icon: google-docs
               href: https://docs.google.com/document/u/0/
         - Habitica:
             - icon: habitica
