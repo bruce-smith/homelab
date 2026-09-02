@@ -97,3 +97,19 @@ releases:
     version: 41.4.0
     values:
       - values/traefik.values.yaml
+
+  # ---- Dashboard (homepage.home) ----
+  # m0nsterrr-homepage 5.2.0 = Homepage v2.2.0 (current). Config files
+  # (services/widgets/settings/bookmarks) come from the homepage-config
+  # ConfigMap, applied by the presync hook before the chart renders.
+  - name: homepage
+    namespace: homepage
+    chart: oci://ghcr.io/m0nsterrr/helm-charts/homepage
+    version: 5.2.0
+    values:
+      - values/homepage.values.yaml
+    hooks:
+      - events: ["presync"]
+        showlogs: true
+        command: kubectl
+        args: ["apply", "-f", "manifests/homepage-config.yaml"]

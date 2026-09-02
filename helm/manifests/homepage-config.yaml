@@ -1,0 +1,76 @@
+---
+# Homepage namespace
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: homepage
+---
+# Homepage config — applied as a ConfigMap by helmfile presync hook.
+# Individual files are mounted into /app/config by values/homepage.values.yaml.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: homepage-config
+  namespace: homepage
+data:
+  settings.yaml: |
+    title: Bruce Lab
+    language: en
+    theme: dark
+  services.yaml: |
+    - Core:
+        - Pi-hole:
+            icon: pihole
+            href: http://pihole.home
+            description: DNS + ad-blocking
+            server: http://pihole-web.pihole-system.svc.cluster.local
+        - Traefik:
+            icon: traefik
+            href: http://traefik.home
+            description: Ingress controller
+            server: http://traefik.traefik-system.svc.cluster.local
+    - Cluster:
+        - Homepage:
+            icon: homepage
+            href: http://homepage.home
+            description: This dashboard
+        - Longhorn:
+            icon: longhorn
+            href: http://longhorn-frontend.longhorn-system.svc.cluster.local
+            description: Distributed storage
+  widgets.yaml: |
+    - kubernetes:
+        cluster:
+          show: true
+          cpu: true
+          memory: true
+          showLabel: true
+          label: "cluster"
+        nodes:
+          show: true
+          cpu: true
+          memory: true
+          showLabel: true
+    - resources:
+        backend: resources
+        expanded: true
+        cpu: true
+        memory: true
+        network: default
+    - search:
+        provider: duckduckgo
+        target: _blank
+  bookmarks.yaml: |
+    - GitHub:
+        - Homepage:
+            abbr: GH
+            href: https://github.com/gethomepage/homepage
+    - Homelab:
+        - Repo:
+            abbr: HL
+            href: https://github.com/dreamsofautonomy/homelab
+  kubernetes.yaml: |
+    mode: cluster
+  docker.yaml: ""
+  custom.css: ""
+  custom.js: ""
