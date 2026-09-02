@@ -30,10 +30,6 @@ data:
             description: Ingress controller
             server: http://traefik.traefik-system.svc.cluster.local
     - Cluster:
-        - Homepage:
-            icon: homepage
-            href: http://homepage.home
-            description: This dashboard
         - Longhorn:
             icon: longhorn
             href: http://longhorn.home
@@ -63,12 +59,12 @@ data:
         target: _blank
   bookmarks.yaml: |
     - GitHub:
-        - Homepage:
-            abbr: GH
+        - Homepage Repo:
+            icon: github
             href: https://github.com/gethomepage/homepage
     - Homelab:
-        - Repo:
-            abbr: HL
+        - dreamsofautonomy:
+            icon: github
             href: https://github.com/dreamsofautonomy/homelab
   kubernetes.yaml: |
     mode: cluster
