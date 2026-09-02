@@ -35,10 +35,21 @@ helmDefaults:
 
 releases:
   # ---- Distributed storage ----
+  # backup-target-secret (Backblaze B2 creds) is sops-encrypted in
+  # values/b2-backup-secret.sops.yaml. A presync hook decrypts + applies it
+  # so Longhorn's BackupTarget controller has credentials (applied before
+  # the chart so the controller never sees a missing secret).
   - name: longhorn
     namespace: longhorn-system
     chart: longhorn/longhorn
     version: 1.12.1
+    hooks:
+      - events: ["presync"]
+        showlogs: true
+        command: sh
+        args:
+          - -c
+          - "sops -d values/b2-backup-secret.sops.yaml | kubectl apply -f -"
 
   # ---- Bare-metal load balancer ----
   # MetalLB needs its IPAddressPool + L2Advertisement CRs, applied after install.
