@@ -58,6 +58,33 @@ data:
         provider: duckduckgo
         target: _blank
   bookmarks.yaml: |
+    - Entertainment:
+        - YouTube:
+            - icon: youtube
+              href: https://www.youtube.com/
+        - Reddit:
+            - icon: reddit
+              href: https://www.reddit.com/
+        - Plex:
+            - icon: plex
+              href: https://watch.plex.tv/me
+    - Productivity:
+        - Google Keep:
+            - icon: googlekeep
+              href: https://keep.google.com/
+        - Google Drive:
+            - icon: googledrive
+              href: https://drive.google.com/drive/home
+        - Google Docs:
+            - icon: googledocs
+              href: https://docs.google.com/document/u/0/
+        - Habitica:
+            - icon: habitica
+              href: https://habitica.com/static/home
+    - AI:
+        - Perplexity:
+            - icon: perplexity
+              href: https://www.perplexity.ai/
     - GitHub:
         - Homepage Repo:
             - icon: github
