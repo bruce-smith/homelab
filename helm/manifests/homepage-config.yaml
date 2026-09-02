@@ -20,7 +20,7 @@ data:
   services.yaml: |
     - Core:
         - Pi-hole:
-            icon: pihole
+            icon: pi-hole
             href: http://pihole.home/admin/login
             description: DNS + ad-blocking
             server: http://pihole-web.pihole-system.svc.cluster.local
