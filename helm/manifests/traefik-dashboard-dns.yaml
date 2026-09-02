@@ -1,0 +1,23 @@
+---
+# traefik.home DNS record (external-dns only watches Ingresses, not
+# IngressRoutes) — this Ingress is a no-op for routing (the dashboard is served
+# by traefik-dashboard IngressRoute) but external-dns reads its host to create
+# the A record: traefik.home -> 192.168.3.240
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: traefik-dashboard-dns
+  namespace: traefik-system
+spec:
+  ingressClassName: traefik-internal
+  rules:
+    - host: traefik.home
+      http:
+        paths:
+          - path: /healthz
+            pathType: Prefix
+            backend:
+              service:
+                name: traefik
+                port:
+                  number: 8080

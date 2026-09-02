@@ -1,0 +1,24 @@
+---
+# Traefik dashboard — exposed via IngressRoute (Traefik CRD) because in v3 the
+# dashboard is served by the internal api@internal TraefikService on the
+# "traefik" entrypoint (port 8080), NOT by routing to the service port.
+#
+# Note: external-dns watches standard Ingresses (not IngressRoutes), so the
+# traefik.home A record is managed manually / via the existing ingress-class
+# mechanism if needed. DNS record for traefik.home is created by the
+# traefik-dashboard Ingress kept alongside (see traefik-dashboard-ingress.yaml).
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: traefik-dashboard
+  namespace: traefik-system
+spec:
+  entryPoints:
+    - web
+    - traefik
+  routes:
+    - match: Host(`traefik.home`)
+      kind: Rule
+      services:
+        - name: api@internal
+          kind: TraefikService

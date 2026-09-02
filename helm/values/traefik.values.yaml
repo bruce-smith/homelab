@@ -12,6 +12,14 @@ service:
   spec:
     type: LoadBalancer
     loadBalancerIP: 192.168.3.240
-# Dashboard off (reachable via kubectl port-forward if ever needed).
+# Dashboard — enabled 2026-09-01; exposed via Ingress on traefik.home
+# (traefik/values -> manifests/traefik-dashboard.yaml), auto DNS via external-dns.
 api:
-  dashboard: false
+  dashboard: true
+# Expose the api/dashboard port (8080) through the LoadBalancer Service so the
+# Ingress can route to it.
+ports:
+  traefik:
+    expose:
+      default: true
+    exposedPort: 8080
