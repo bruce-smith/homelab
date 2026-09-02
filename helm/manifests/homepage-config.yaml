@@ -21,7 +21,7 @@ data:
     - Core:
         - Pi-hole:
             icon: pihole
-            href: http://pihole.home
+            href: http://pihole.home/admin/login
             description: DNS + ad-blocking
             server: http://pihole-web.pihole-system.svc.cluster.local
         - Traefik:
@@ -36,8 +36,9 @@ data:
             description: This dashboard
         - Longhorn:
             icon: longhorn
-            href: http://longhorn-frontend.longhorn-system.svc.cluster.local
+            href: http://longhorn.home
             description: Distributed storage
+            server: http://longhorn-frontend.longhorn-system.svc.cluster.local
   widgets.yaml: |
     - kubernetes:
         cluster:
