@@ -35,6 +35,8 @@ spec:
       storage: 5Gi
 ---
 # Mirrored bootable OS assets (optional — grows with use)
+# Expanded 20Gi -> 50Gi 2026-09-03 to hold the local ISO collection
+# (Win11 6.9G, Server2025 8.2G, NixOS 3.8G, Hiren's 3.3G, Acronis 0.6G).
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -46,7 +48,7 @@ spec:
   storageClassName: longhorn
   resources:
     requests:
-      storage: 20Gi
+      storage: 50Gi
 ---
 apiVersion: apps/v1
 kind: Deployment
