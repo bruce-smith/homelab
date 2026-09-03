@@ -63,8 +63,30 @@ spec:
       labels:
         app: netbootxyz
     spec:
+      # TFTP is a long-lived UDP session — pin to ONE node (node0) so the
+      # service's externalTrafficPolicy: Local keeps every packet of a
+      # transfer on the same node. Without this, MetalLB hair-pins RRQs
+      # across nodes and the client's ACKs get dropped by conntrack
+      # (classic "iPXE TFTP timeout" with a LoadBalancer).
+      nodeSelector:
+        kubernetes.io/hostname: node0
       securityContext:
         fsGroup: 1000
+      # netboot.xyz 3.x binaries chainload to autoexec.ipxe after the .efi
+      # downloads, but the container only ships it in the secureboot-*/
+      # subdirs — the root file is an empty placeholder. This initContainer
+      # copies the real script to the TFTP root on every pod start so
+      # non-Secure-Boot PXE clients can chain into the menu.
+      initContainers:
+        - name: autoexec-fix
+          image: ghcr.io/netbootxyz/netbootxyz:latest
+          # NB: initContainers bypass the image entrypoint, so the `nbxyz`
+          # user/group don't exist here — use numeric 1000:1000 (= PUID/PGID,
+          # which is what the app actually runs as).
+          command: ["sh", "-c", "cp /config/menus/secureboot-x86_64/autoexec.ipxe /config/menus/autoexec.ipxe && chown 1000:1000 /config/menus/autoexec.ipxe && chmod 664 /config/menus/autoexec.ipxe"]
+          volumeMounts:
+            - name: config
+              mountPath: /config
       containers:
         - name: netbootxyz
           image: ghcr.io/netbootxyz/netbootxyz:latest
@@ -122,6 +144,11 @@ metadata:
 spec:
   type: LoadBalancer
   loadBalancerIP: 192.168.3.242
+  # Local = kube-proxy does NOT SNAT or hair-pin cross-node. Every TFTP
+  # packet of a session hits the same node (the one hosting the pod),
+  # so the client's ACKs always reach the session that started it.
+  # REQUIRED for UDP services like TFTP behind MetalLB.
+  externalTrafficPolicy: Local
   selector:
     app: netbootxyz
   ports:
