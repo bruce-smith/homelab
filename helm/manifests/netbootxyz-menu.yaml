@@ -287,7 +287,7 @@ data:
 
     item acronis ${space} Acronis Bootable Media
 
-    item --gap:
+    item --gap -
 
     item localboot ${space} Boot from local disk
 
