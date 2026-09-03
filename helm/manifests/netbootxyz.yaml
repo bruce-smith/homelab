@@ -72,18 +72,19 @@ spec:
         kubernetes.io/hostname: node0
       securityContext:
         fsGroup: 1000
-      # netboot.xyz 3.x binaries chainload to autoexec.ipxe after the .efi
-      # downloads, but the container only ships it in the secureboot-*/
-      # subdirs — the root file is an empty placeholder. This initContainer
-      # copies the real script to the TFTP root on every pod start so
-      # non-Secure-Boot PXE clients can chain into the menu.
+      # The container ships autoexec.ipxe only in the secureboot-*/ subdirs,
+      # and that Secure Boot variant re-runs dhcp + HTTPS-chains to the
+      # internet — which stalls on VirtualBox/older iPXE. Replace it with a
+      # minimal local-first script: no re-DHCP (iPXE already has an IP), chain
+      # to the LOCAL menu over TFTP (fast, no internet/DNS/TLS needed), with
+      # the official upstream URL as fallback.
       initContainers:
         - name: autoexec-fix
           image: ghcr.io/netbootxyz/netbootxyz:latest
           # NB: initContainers bypass the image entrypoint, so the `nbxyz`
           # user/group don't exist here — use numeric 1000:1000 (= PUID/PGID,
           # which is what the app actually runs as).
-          command: ["sh", "-c", "cp /config/menus/secureboot-x86_64/autoexec.ipxe /config/menus/autoexec.ipxe && chown 1000:1000 /config/menus/autoexec.ipxe && chmod 664 /config/menus/autoexec.ipxe"]
+          command: ["sh", "-c", "printf '%s\\n' '#!ipxe' 'echo netboot.xyz - local PXE boot server' 'set server 192.168.3.242' 'echo Loading local menu...' 'chain --autofree tftp://${server}/menu.ipxe ||' 'echo Local menu unavailable - loading from netboot.xyz...' 'chain --autofree https://boot.netboot.xyz/3.0.3/menu.ipxe ||' 'chain --autofree http://boot.netboot.xyz/3.0.3/menu.ipxe' > /config/menus/autoexec.ipxe && chown 1000:1000 /config/menus/autoexec.ipxe && chmod 664 /config/menus/autoexec.ipxe"]
           volumeMounts:
             - name: config
               mountPath: /config
