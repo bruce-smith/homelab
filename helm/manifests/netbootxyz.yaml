@@ -1,0 +1,159 @@
+---
+# ============================================================
+# netboot.xyz — PXE/network boot server (netboot.home)
+# ============================================================
+# Official image ghcr.io/netbootxyz/netbootxyz (linuxserver/netbootxyz
+# is DEPRECATED — do not use). Container provides:
+#   - web UI        : 3000/TCP  (menu editing, asset mirroring)
+#   - nginx assets  : 80/TCP    (boot files + local OS asset mirror)
+#   - TFTP (dnsmasq): 69/UDP    (serves iPXE boot files to PXE clients)
+# The container has NO DHCP server — the router's DHCP must advertise
+# the boot server via Option 66/67. UniFi Network has "Network Boot"
+# (Option 66/67) built in: server = 192.168.3.242, boot file =
+# netboot.xyz.efi (UEFI; switch to netboot.xyz.kpxe for legacy BIOS).
+#
+# IP scheme: MetalLB pool .240-.249 — traefik .240, pihole .241,
+# netbootxyz .242.
+# ============================================================
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: netbootxyz-system
+---
+# Web app config + iPXE menus (persistent)
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: netbootxyz-config
+  namespace: netbootxyz-system
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: longhorn
+  resources:
+    requests:
+      storage: 5Gi
+---
+# Mirrored bootable OS assets (optional — grows with use)
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: netbootxyz-assets
+  namespace: netbootxyz-system
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: longhorn
+  resources:
+    requests:
+      storage: 20Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: netbootxyz
+  namespace: netbootxyz-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: netbootxyz
+  template:
+    metadata:
+      labels:
+        app: netbootxyz
+    spec:
+      securityContext:
+        fsGroup: 1000
+      containers:
+        - name: netbootxyz
+          image: ghcr.io/netbootxyz/netbootxyz:latest
+          env:
+            - name: PUID
+              value: "1000"
+            - name: PGID
+              value: "1000"
+            - name: MENU_VERSION
+              value: "3.0.3"
+            # TFTP over a Kubernetes LoadBalancer breaks without this: dnsmasq
+            # normally answers data blocks from an ephemeral port, and the
+            # client's conntrack (which only knows :69) drops those replies.
+            # --tftp-single-port forces ALL TFTP traffic through port 69 so the
+            # LoadBalancer DNAT/conntrack entry stays valid for every packet.
+            - name: TFTPD_OPTS
+              value: "--tftp-single-port"
+          ports:
+            - name: webapp
+              containerPort: 3000
+              protocol: TCP
+            - name: nginx
+              containerPort: 80
+              protocol: TCP
+            - name: tftp
+              containerPort: 69
+              protocol: UDP
+          volumeMounts:
+            - name: config
+              mountPath: /config
+            - name: assets
+              mountPath: /assets
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              memory: 512Mi
+      volumes:
+        - name: config
+          persistentVolumeClaim:
+            claimName: netbootxyz-config
+        - name: assets
+          persistentVolumeClaim:
+            claimName: netbootxyz-assets
+---
+# MetalLB LoadBalancer — TFTP (UDP) + nginx (TCP) + web UI (TCP)
+# Dedicated IP 192.168.3.242 (no allow-shared-ip — that annotation is for
+# IP sharing across services and caused the Pi-hole/MetalLB mess earlier).
+apiVersion: v1
+kind: Service
+metadata:
+  name: netbootxyz
+  namespace: netbootxyz-system
+spec:
+  type: LoadBalancer
+  loadBalancerIP: 192.168.3.242
+  selector:
+    app: netbootxyz
+  ports:
+    - name: webapp
+      port: 3000
+      targetPort: 3000
+      protocol: TCP
+    - name: nginx
+      port: 80
+      targetPort: 80
+      protocol: TCP
+    - name: tftp
+      port: 69
+      targetPort: 69
+      protocol: UDP
+---
+# Web UI via Traefik at netboot.home (external-dns auto-creates the A record)
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: netbootxyz
+  namespace: netbootxyz-system
+spec:
+  ingressClassName: traefik-internal
+  rules:
+    - host: netboot.home
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: netbootxyz
+                port:
+                  number: 3000

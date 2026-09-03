@@ -29,6 +29,11 @@ data:
             href: http://traefik.home
             description: Ingress controller
             server: http://traefik.traefik-system.svc.cluster.local
+        - Netboot.xyz:
+            icon: netbootxyz
+            href: http://netboot.home
+            description: PXE / network boot
+            server: http://netbootxyz.netbootxyz-system.svc.cluster.local
     - Cluster:
         - Longhorn:
             icon: longhorn
