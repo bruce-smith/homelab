@@ -275,8 +275,6 @@ data:
 
     item win11 ${space} Windows 11 (Windows_11.iso)
 
-    item winserver ${space} Windows Server 2025 (windows_server_2025.iso)
-
     item --gap Linux:
 
     item nixos ${space} NixOS 26.05 graphical
@@ -303,13 +301,6 @@ data:
     echo Booting Windows 11 from ISO...
 
     sanboot --no-describe ${nbxyz_iso}/Windows_11.iso || goto iso_fail
-
-
-    :winserver
-
-    echo Booting Windows Server 2025 from ISO...
-
-    sanboot --no-describe ${nbxyz_iso}/windows_server_2025.iso || goto iso_fail
 
 
     :nixos
