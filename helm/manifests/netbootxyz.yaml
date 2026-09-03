@@ -76,20 +76,23 @@ spec:
         fsGroup: 1000
       # The container ships autoexec.ipxe only in the secureboot-*/ subdirs,
       # and that Secure Boot variant re-runs dhcp + HTTPS-chains to the
-      # internet — which stalls on VirtualBox/older iPXE. Replace it with a
-      # minimal local-first script: no re-DHCP (iPXE already has an IP), chain
-      # to the LOCAL menu over TFTP (fast, no internet/DNS/TLS needed), with
-      # the official upstream URL as fallback.
+      # internet — which stalls on VirtualBox/older iPXE. This initContainer
+      # restores our local-first iPXE files (autoexec.ipxe, patched menu.ipxe
+      # with the "Local ISO Collection" entry, and custom/custom.ipxe) from
+      # the netbootxyz-menu ConfigMap on every pod start.
       initContainers:
-        - name: autoexec-fix
+        - name: menu-restore
           image: ghcr.io/netbootxyz/netbootxyz:latest
           # NB: initContainers bypass the image entrypoint, so the `nbxyz`
           # user/group don't exist here — use numeric 1000:1000 (= PUID/PGID,
           # which is what the app actually runs as).
-          command: ["sh", "-c", "printf '%s\\n' '#!ipxe' 'echo netboot.xyz - local PXE boot server' 'set server 192.168.3.242' 'echo Loading local menu...' 'chain --autofree tftp://${server}/menu.ipxe ||' 'echo Local menu unavailable - loading from netboot.xyz...' 'chain --autofree https://boot.netboot.xyz/3.0.3/menu.ipxe ||' 'chain --autofree http://boot.netboot.xyz/3.0.3/menu.ipxe' > /config/menus/autoexec.ipxe && chown 1000:1000 /config/menus/autoexec.ipxe && chmod 664 /config/menus/autoexec.ipxe"]
+          command: ["sh", "-c", "mkdir -p /config/menus/custom && cp /menu-files/autoexec.ipxe /config/menus/autoexec.ipxe && cp /menu-files/menu.ipxe /config/menus/menu.ipxe && cp /menu-files/custom.ipxe /config/menus/custom/custom.ipxe && chown -R 1000:1000 /config/menus/autoexec.ipxe /config/menus/menu.ipxe /config/menus/custom && chmod 664 /config/menus/autoexec.ipxe /config/menus/menu.ipxe /config/menus/custom/custom.ipxe"]
           volumeMounts:
             - name: config
               mountPath: /config
+            - name: menu-files
+              mountPath: /menu-files
+              readOnly: true
       containers:
         - name: netbootxyz
           image: ghcr.io/netbootxyz/netbootxyz:latest
@@ -135,6 +138,9 @@ spec:
         - name: assets
           persistentVolumeClaim:
             claimName: netbootxyz-assets
+        - name: menu-files
+          configMap:
+            name: netbootxyz-menu
 ---
 # MetalLB LoadBalancer — TFTP (UDP) + nginx (TCP) + web UI (TCP)
 # Dedicated IP 192.168.3.242 (no allow-shared-ip — that annotation is for

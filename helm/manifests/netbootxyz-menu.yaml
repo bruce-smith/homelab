@@ -1,0 +1,357 @@
+---
+# netboot.xyz iPXE menu overlays — declarative copy of the custom boot
+# entries. Applied as a ConfigMap; the netbootxyz Deployment's initContainer
+# copies these over the container defaults on every pod start (so a pod
+# recreation can't lose the custom menu).
+#
+# Files:
+#   autoexec.ipxe      — local-first boot chain (menu.ipxe over TFTP, upstream fallback)
+#   menu.ipxe          — main menu, patched to add "Local ISO Collection" item
+#   custom.ipxe        — the local ISO boot sub-menu (SAN-boots ISOs over HTTP)
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: netbootxyz-menu
+  namespace: netbootxyz-system
+data:
+  autoexec.ipxe: '#!ipxe
+
+    echo netboot.xyz - local PXE boot server
+
+    set server 192.168.3.242
+
+    echo Loading local menu...
+
+    chain --autofree tftp://${server}/menu.ipxe ||
+
+    echo Local menu unavailable - loading from netboot.xyz...
+
+    chain --autofree https://boot.netboot.xyz/3.0.3/menu.ipxe ||
+
+    chain --autofree http://boot.netboot.xyz/3.0.3/menu.ipxe
+
+    '
+  menu.ipxe: '#!ipxe
+
+
+    :start
+
+    isset ${arch} && goto skip_arch_detect ||
+
+    cpuid --ext 29 && set arch x86_64 || set arch i386
+
+    iseq ${buildarch} arm64 && set arch arm64 ||
+
+    :skip_arch_detect
+
+    chain --autofree boot.cfg ||
+
+    echo Attempting to retrieve latest upstream version number...
+
+    chain --timeout 5000 https://boot.netboot.xyz/version.ipxe ||
+
+    ntp 0.pool.ntp.org ||
+
+    iseq ${cls} serial && goto ignore_cls ||
+
+    set cls:hex 1b:5b:4a  # ANSI clear screen sequence - "^[[J"
+
+    set cls ${cls:string}
+
+    :ignore_cls
+
+
+
+    isset ${menu} && goto ${menu} ||
+
+    isset ${ip} || dhcp
+
+
+    :main_menu
+
+    clear menu
+
+    set space:hex 20:20
+
+    set space ${space:string}
+
+    isset ${next-server} && menu ${site_name} v${version} - next-server: ${next-server}
+    || menu ${site_name}
+
+    item --gap Default:
+
+    item local ${space} Boot from local hdd
+
+    item --gap Distributions:
+
+    iseq ${menu_linux} 1 && item linux ${space} Linux Network Installs (64-bit) ||
+
+    iseq ${menu_linux_i386} 1 && item linux-i386 ${space} Linux Network Installs (32-bit)
+    ||
+
+    iseq ${menu_linux_arm} 1 && item linux-arm ${space} Linux Network Installs (arm64)
+    ||
+
+    iseq ${menu_live} 1 && item live ${space} Live CDs ||
+
+    iseq ${menu_live_arm} 1 && item live-arm ${space} Live CDs ||
+
+    iseq ${menu_bsd} 1 && item bsd ${space} BSD Installs ||
+
+    iseq ${menu_unix} 1 && item unix ${space} Unix Network Installs ||
+
+    iseq ${menu_freedos} 1 && item freedos ${space} FreeDOS ||
+
+    iseq ${menu_windows} 1 && item windows ${space} Windows ||
+
+    item --gap Tools:
+
+    iseq ${menu_utils} 1 && iseq ${platform} efi && item utils-efi ${space} Utilities
+    (UEFI) ||
+
+    iseq ${menu_utils} 1 && iseq ${platform} pcbios && iseq ${arch} x86_64 && item
+    utils-pcbios-64 ${space} Utilities (64-bit) ||
+
+    iseq ${menu_utils} 1 && iseq ${platform} pcbios && iseq ${arch} i386 && item utils-pcbios-32
+    ${space} Utilities (32-bit) ||
+
+    iseq ${menu_utils_arm} 1 && item utils-arm ${space} Utilities (arm64) ||
+
+    item change_arch ${space} Architecture: ${arch}
+
+    item shell ${space} iPXE shell
+
+    item netinfo ${space} Network card info
+
+    iseq ${menu_pci} 1 && item lspci ${space} PCI Device List ||
+
+    item about ${space} About netboot.xyz
+
+    item --gap Signature Checks:
+
+    item sig_check ${space} netboot.xyz [ enabled: ${sigs_enabled} ]
+
+    isset ${github_user} && item --gap Custom Github Menu: ||
+
+    isset ${github_user} && item custom-github ${space} ${github_user}''s Custom Menu
+    ||
+
+    isset ${custom_url} && item --gap Custom URL Menu: ||
+
+    isset ${custom_url} && item custom-url ${space} Custom URL Menu ||
+
+    item --gap Local ISO Collection:
+
+    item custom-user ${space} Boot local ISOs (Win11/Server2025/NixOS/Hiren''s/Acronis)
+
+    isset ${menu} && set timeout 0 || set timeout ${boot_timeout}
+
+    choose --timeout ${timeout} --default ${menu} menu || goto local
+
+    echo ${cls}
+
+    goto ${menu} ||
+
+    iseq ${sigs_enabled} true && goto verify_sigs || goto change_menu
+
+
+    :verify_sigs
+
+    imgverify ${menu}.ipxe ${sigs}${menu}.ipxe.sig || goto error
+
+    goto change_menu
+
+
+    :change_menu
+
+    chain ${menu}.ipxe || goto error
+
+    goto main_menu
+
+
+    :error
+
+    echo Error occurred, press any key to return to menu ...
+
+    prompt
+
+    goto main_menu
+
+
+    :local
+
+    echo Booting from local disks ...
+
+    exit 1
+
+
+    :shell
+
+    echo Type "exit" to return to menu.
+
+    set menu main_menu
+
+    shell
+
+    goto main_menu
+
+
+    :change_arch
+
+    iseq ${arch} x86_64 && set arch i386 && set menu_linux_i386 1 && set menu_linux
+    0 && goto main_menu ||
+
+    iseq ${arch} i386 && set arch x86_64 && set menu_linux_i386 0 && set menu_linux
+    1 && goto main_menu ||
+
+    goto main_menu
+
+
+    :sig_check
+
+    iseq ${sigs_enabled} true && set sigs_enabled false || set sigs_enabled true
+
+    goto main_menu
+
+
+    :about
+
+    chain https://boot.netboot.xyz/about.ipxe || chain about.ipxe
+
+    goto main_menu
+
+
+    :custom-github
+
+    chain https://raw.githubusercontent.com/${github_user}/netboot.xyz-custom/master/custom.ipxe
+    || goto custom-failed
+
+    goto main_menu
+
+
+    :custom-url
+
+    chain ${custom_url}/custom.ipxe || goto custom-failed
+
+    goto main_menu
+
+
+    :custom-user
+
+    chain custom/custom.ipxe || goto custom-failed
+
+    goto main_menu
+
+
+    :custom-failed
+
+    clear menu
+
+    goto error
+
+    '
+  custom.ipxe: '#!ipxe
+
+    # ============================================================
+
+    # Local ISO collection — served from the netboot.xyz pod
+
+    # (http://192.168.3.242 = MetalLB LB for the nginx /assets)
+
+    # Added 2026-09-03. All entries SAN-boot the ISO over HTTP
+
+    # (iPXE httpdrive) — no extraction needed, works on UEFI.
+
+    # ============================================================
+
+    set nbxyz_iso http://192.168.3.242
+
+
+    :local_iso_menu
+
+    menu Local ISO Collection
+
+    item --gap Windows:
+
+    item win11 ${space} Windows 11 (Windows_11.iso)
+
+    item winserver ${space} Windows Server 2025 (windows_server_2025.iso)
+
+    item --gap Linux:
+
+    item nixos ${space} NixOS 26.05 graphical
+
+    item --gap Utilities / Recovery:
+
+    item hiren ${space} Hiren''s BootCD PE
+
+    item acronis ${space} Acronis Bootable Media
+
+    item --gap:
+
+    item localboot ${space} Boot from local disk
+
+    item back ${space} Return to netboot.xyz main menu
+
+    choose --default localboot target || exit
+
+    goto ${target}
+
+
+    :win11
+
+    echo Booting Windows 11 from ISO...
+
+    sanboot --no-describe ${nbxyz_iso}/Windows_11.iso || goto iso_fail
+
+
+    :winserver
+
+    echo Booting Windows Server 2025 from ISO...
+
+    sanboot --no-describe ${nbxyz_iso}/windows_server_2025.iso || goto iso_fail
+
+
+    :nixos
+
+    echo Booting NixOS 26.05 from ISO...
+
+    sanboot --no-describe ${nbxyz_iso}/nixos-graphical-26.05.8477.062346a6d85b-x86_64-linux.iso
+    || goto iso_fail
+
+
+    :hiren
+
+    echo Booting Hiren''s BootCD PE from ISO...
+
+    sanboot --no-describe ${nbxyz_iso}/HBCD_PE_x64.iso || goto iso_fail
+
+
+    :acronis
+
+    echo Booting Acronis Bootable Media from ISO...
+
+    sanboot --no-describe ${nbxyz_iso}/AcronisBootableMedia.iso || goto iso_fail
+
+
+    :localboot
+
+    exit
+
+
+    :back
+
+    chain tftp://${next-server}/menu.ipxe || goto iso_fail
+
+
+    :iso_fail
+
+    echo
+
+    echo Boot failed. Press any key to return to the menu...
+
+    prompt
+
+    goto local_iso_menu
+
+    '
