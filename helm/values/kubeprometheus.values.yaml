@@ -60,6 +60,40 @@ grafana:
   adminUser: admin
   # CHANGE ON FIRST LOGIN (default admin/admin, homelab only)
   adminPassword: admin
+  # node0 boots from a laptop HDD — Grafana's first-boot SQLite migrations
+  # can take 5-10 min. startupProbe holds off liveness/readiness until the
+  # app actually responds, so slow boots don't trigger kill loops.
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: "1"
+      memory: 1Gi
+  startupProbe:
+    httpGet:
+      path: /api/health
+      port: grafana
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 60
+  livenessProbe:
+    httpGet:
+      path: /api/health
+      port: grafana
+    initialDelaySeconds: 15
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 6
+  readinessProbe:
+    httpGet:
+      path: /api/health
+      port: grafana
+    initialDelaySeconds: 15
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 6
   additionalDataSources:
     - name: Loki
       type: loki
