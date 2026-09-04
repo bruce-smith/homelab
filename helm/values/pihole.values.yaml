@@ -24,3 +24,10 @@ serviceDns:
     metallb.universe.tf/allow-shared-ip: pihole-svc
   type: LoadBalancer
 replicaCount: 1
+# Conditional forwarder: anything under homelab.local goes to the AD DNS
+# server (WindowsNode DC at .196) instead of the upstream resolver. Added
+# 2026-09-04 after the AD DC was stood up — lets LAN clients resolve AD
+# names (windowsnode.homelab.local etc.) while Pi-hole stays the LAN DNS.
+dnsmasq:
+  upstreamServers:
+    - server=/homelab.local/192.168.3.196
