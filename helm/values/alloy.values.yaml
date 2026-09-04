@@ -1,0 +1,55 @@
+# ============================================================
+# Grafana Alloy — DaemonSet log collector → Loki
+# Chart 1.12.1 (app v1.19.2) — namespace: monitoring
+# Each Alloy pod discovers ALL pods via the API but only keeps
+# the ones on its OWN node (NODE_NAME from the downward API),
+# so every log line is shipped exactly once.
+# ============================================================
+
+controller:
+  type: daemonset
+
+alloy:
+  # loki.source.kubernetes reads pod logs from the node's container
+  # log files — /var/log must be mounted from the host or nothing ships.
+  mounts:
+    varlog: true
+  extraEnv:
+    - name: NODE_NAME
+      valueFrom:
+        fieldRef:
+          fieldPath: spec.nodeName
+  configMap:
+    create: true
+    name: alloy-config
+    content: |
+      discovery.kubernetes "pods" {
+        role = "pod"
+      }
+
+      discovery.relabel "node_pods" {
+        targets = discovery.kubernetes.pods.targets
+        rule {
+          source_labels = ["__meta_kubernetes_pod_node_name"]
+          action = "keep"
+          regex = env("NODE_NAME")
+        }
+      }
+
+      loki.source.kubernetes "pods" {
+        targets    = discovery.relabel.node_pods.output
+        forward_to = [loki.write.default.receiver]
+      }
+
+      loki.write "default" {
+        endpoint {
+          url = "http://loki.monitoring.svc.cluster.local:3100/loki/api/v1/push"
+        }
+      }
+  resources:
+    requests:
+      cpu: 25m
+      memory: 128Mi
+    limits:
+      cpu: 250m
+      memory: 512Mi

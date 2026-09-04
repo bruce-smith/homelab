@@ -27,6 +27,10 @@ repositories:
     url: https://kubernetes-sigs.github.io/external-dns/
   - name: traefik
     url: https://traefik.github.io/charts
+  - name: prometheus-community
+    url: https://prometheus-community.github.io/helm-charts
+  - name: grafana
+    url: https://grafana.github.io/helm-charts
 
 helmDefaults:
   createNamespace: true
@@ -113,3 +117,30 @@ releases:
         showlogs: true
         command: kubectl
         args: ["apply", "-f", "manifests/homepage-config.yaml"]
+
+  # ---- Observability (monitoring.home) ----
+  # kube-prometheus-stack (Prometheus + Grafana + node-exporter +
+  # kube-state-metrics + Alertmanager) + Loki (logs) + Alloy (collector).
+  # Grafana is exposed at grafana.home via the grafana ingress.
+  # WindowsNode (DC) is scraped as a static target once windows_exporter
+  # is installed there (see values/kubeprometheus.values.yaml).
+  - name: kube-prometheus-stack
+    namespace: monitoring
+    chart: prometheus-community/kube-prometheus-stack
+    version: 89.2.1
+    values:
+      - values/kubeprometheus.values.yaml
+
+  - name: loki
+    namespace: monitoring
+    chart: grafana/loki
+    version: 7.3.0
+    values:
+      - values/loki.values.yaml
+
+  - name: alloy
+    namespace: monitoring
+    chart: grafana/alloy
+    version: 1.12.1
+    values:
+      - values/alloy.values.yaml

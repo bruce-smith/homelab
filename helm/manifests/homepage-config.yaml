@@ -40,6 +40,12 @@ data:
             href: http://longhorn.home
             description: Distributed storage
             server: http://longhorn-frontend.longhorn-system.svc.cluster.local
+    - Monitoring:
+        - Grafana:
+            icon: grafana
+            href: http://grafana.home
+            description: Dashboards (metrics + logs)
+            server: http://kube-prometheus-stack-grafana.monitoring.svc.cluster.local
   widgets.yaml: |
     - kubernetes:
         cluster:

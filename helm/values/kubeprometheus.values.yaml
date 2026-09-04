@@ -1,0 +1,97 @@
+# ============================================================
+# kube-prometheus-stack — cluster metrics + dashboards
+# Chart 89.2.1 (app v0.93.1) — namespace: monitoring
+# Tuned for 3-node k3s homelab: node1 has only 3.7GB RAM, so
+# heavy pods (Prometheus, Grafana) are pinned away from node1.
+# ============================================================
+
+# ---- Prometheus ----
+prometheus:
+  prometheusSpec:
+    retention: 15d
+    resources:
+      requests:
+        cpu: 100m
+        memory: 512Mi
+      limits:
+        cpu: "1"
+        memory: 2Gi
+    # Keep Prometheus off node1 (3.7GB) — pin to node0/node2
+    affinity:
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+            - matchExpressions:
+                - key: kubernetes.io/hostname
+                  operator: NotIn
+                  values:
+                    - node1
+    # Metrics live on Longhorn (NOT local-path)
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          storageClassName: longhorn
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 20Gi
+    # WindowsNode DC scrape target (windows_exporter, phase 4)
+    additionalScrapeConfigs:
+      - job_name: windowsnode
+        static_configs:
+          - targets: ["192.168.3.196:9182"]
+            labels:
+              os: windows
+              host: windowsnode
+
+# ---- Alertmanager (small) ----
+alertmanager:
+  alertmanagerSpec:
+    resources:
+      requests:
+        cpu: 10m
+        memory: 64Mi
+      limits:
+        cpu: 200m
+        memory: 256Mi
+
+# ---- Grafana ----
+grafana:
+  adminUser: admin
+  # CHANGE ON FIRST LOGIN (default admin/admin, homelab only)
+  adminPassword: admin
+  ingress:
+    enabled: true
+    ingressClassName: traefik-internal
+    hosts: ["grafana.home"]
+    path: /
+    tls: []
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+              - key: kubernetes.io/hostname
+                operator: NotIn
+                values:
+                  - node1
+
+# ---- kube-state-metrics (small) ----
+kubeStateMetrics:
+  resources:
+    requests:
+      cpu: 10m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+
+# ---- prometheus-operator (small) ----
+prometheusOperator:
+  resources:
+    requests:
+      cpu: 10m
+      memory: 128Mi
+    limits:
+      cpu: 300m
+      memory: 512Mi

@@ -1,0 +1,61 @@
+# ============================================================
+# Loki — log storage (single binary, filesystem on Longhorn)
+# Chart 7.3.0 (app 3.6.12) — namespace: monitoring
+# SingleBinary mode: right size for a homelab; do NOT use
+# SimpleScalable (default) or distributed — they eat RAM.
+# ============================================================
+
+deploymentMode: SingleBinary
+
+# Zero the SimpleScalable targets (chart defaults them to 1) so the
+# single-binary validation passes
+backend:
+  replicas: 0
+read:
+  replicas: 0
+write:
+  replicas: 0
+
+gateway:
+  enabled: false
+
+loki:
+  auth_enabled: false
+  commonConfig:
+    replication_factor: 1
+  schemaConfig:
+    configs:
+      - from: "2024-04-01"
+        store: tsdb
+        object_store: filesystem
+        schema: v13
+        index:
+          prefix: index_
+          period: 24h
+  storage:
+    type: filesystem
+  limits_config:
+    retention_period: 168h
+
+singleBinary:
+  replicas: 1
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 1Gi
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+              - key: kubernetes.io/hostname
+                operator: NotIn
+                values:
+                  - node1
+  persistence:
+    enabled: true
+    storageClass: longhorn
+    size: 10Gi

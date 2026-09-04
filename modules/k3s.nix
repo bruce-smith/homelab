@@ -61,7 +61,8 @@ in
     #   6443 TCP = kube-apiserver (agents reach server on this)
     #   8472 UDP = flannel VXLAN   (node-to-node pod traffic)
     #   10250 TCP = kubelet metrics/health
-    networking.firewall.allowedTCPPorts = [ 6443 10250 ];
+    #   9100 TCP = node-exporter (kube-prometheus-stack DaemonSet)
+    networking.firewall.allowedTCPPorts = [ 6443 10250 9100 ];
     networking.firewall.allowedUDPPorts = [ 8472 ];
 
     # ── Longhorn prereq (enable alongside k3s) ───────────────────────────
