@@ -60,6 +60,13 @@ grafana:
   adminUser: admin
   # CHANGE ON FIRST LOGIN (default admin/admin, homelab only)
   adminPassword: admin
+  additionalDataSources:
+    - name: Loki
+      type: loki
+      uid: loki
+      url: http://loki.monitoring.svc.cluster.local:3100
+      access: proxy
+      isDefault: false
   ingress:
     enabled: true
     ingressClassName: traefik-internal
