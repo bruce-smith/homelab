@@ -133,6 +133,13 @@
           order = 2000;
         };
       };
+      rules.session = {
+        mkhomedir = {
+          enable = true;
+          order = 1500;
+          args = [ "skel=/etc/skel" "umask=0022" ];
+        };
+      };
     };
     # nsswitch is handled by services.sssd automatically (files → sss)
 
