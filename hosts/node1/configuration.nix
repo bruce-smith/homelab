@@ -149,4 +149,8 @@
   # k3s cluster — enable on all nodes (wired gigabit since 2026-09-01)
   homelab.k3s.enable = true;
 
+  # AD join prep — SSSD + Kerberos + chrony NTP (2026-09-05)
+  # One-time: sudo adcli join homelab.local -U join (password via stdin)
+  homelab.ad.enable = true;
+
 }
