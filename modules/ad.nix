@@ -96,9 +96,38 @@
 
     # ── PAM / nsswitch ──────────────────────────────────────────────────
     # sssd module adds nsswitch entries; pam_mkhomedir creates homes.
+    # CRITICAL FIX (2026-09-05): the NixOS sssd default auth stack is
+    #   auth sufficient pam_sss.so use_first_pass
+    #   auth required   pam_deny.so
+    # With use_first_pass and NO earlier module capturing the password,
+    # pam_sss gets an empty password → every AD SSH login fails with
+    # "Preauthentication failed". Override the sshd service to capture the
+    # password (pam_unix) then let pam_sss try it, with a deny fallback.
     security.pam.services.sshd = {
       sshAgentAuth = true;
-      # allow AD users via PAM while local keys still work
+      # Let AD users auth via PAM (kbd-interactive) while local keys still work
+      rules.auth = {
+        unix = {
+          enable = true;
+          order = 1000;
+          arguments = [ "nullok" ];
+        };
+        sss = {
+          enable = true;
+          order = 2000;
+          arguments = [ "use_first_pass" ];
+        };
+      };
+      rules.account = {
+        sss = {
+          enable = true;
+          order = 1000;
+        };
+        unix = {
+          enable = true;
+          order = 2000;
+        };
+      };
     };
     # nsswitch is handled by services.sssd automatically (files → sss)
 
