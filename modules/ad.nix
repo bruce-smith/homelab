@@ -108,7 +108,7 @@
       # Let AD users auth via PAM (kbd-interactive) while local keys still work
       rules.auth = {
         unix = {
-          enable = true;
+          enable = lib.mkForce true;
           order = 1000;
           args = [ "nullok" ];
         };
