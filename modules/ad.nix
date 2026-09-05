@@ -110,12 +110,12 @@
         unix = {
           enable = true;
           order = 1000;
-          arguments = [ "nullok" ];
+          args = [ "nullok" ];
         };
         sss = {
           enable = true;
           order = 2000;
-          arguments = [ "use_first_pass" ];
+          args = [ "use_first_pass" ];
         };
       };
       rules.account = {
