@@ -27,6 +27,7 @@
           ./hosts/${hostName}/hardware-configuration.nix
           ./modules/k3s.nix
           ./modules/tailscale.nix
+          ./modules/ad.nix
           # sops-nix module: reads secrets/*.yaml on the node at activation
           sops-nix.nixosModules.sops
         ];
