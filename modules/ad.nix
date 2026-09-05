@@ -74,7 +74,12 @@
         [domain/homelab.local]
         id_provider = ad
         auth_provider = ad
-        access_provider = ad
+        # CRITICAL (2026-09-05): access_provider = ad enables GPO evaluation,
+        # which fails with no GPOs configured ("GPO-based access control
+        # failed" → pam_sss account phase "Access denied: System error").
+        # Use 'simple' + allow all for the homelab — any valid AD user logs in.
+        access_provider = simple
+        simple_allow_all = true
         chpass_provider = ad
         ldap_schema = ad
         ad_domain = homelab.local
