@@ -135,7 +135,7 @@
       };
       rules.session = {
         mkhomedir = {
-          enable = true;
+          enable = lib.mkForce true;
           order = 1500;
           args = [ "skel=/etc/skel" "umask=0022" ];
         };
