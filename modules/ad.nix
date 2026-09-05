@@ -107,7 +107,7 @@
 
     # ── NTP (chrony) — CRITICAL for Kerberos ────────────────────────────
     # Sync from the DC (which syncs pool.ntp.org) or direct pool.
-    services.chronyd = {
+    services.chrony = {
       enable = true;
       # Prefer the DC as time source (it's stratum 3 via pool.ntp.org),
       # fall back to pool.ntp.org directly.
