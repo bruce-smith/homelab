@@ -60,32 +60,38 @@
     # is unreachable (fallback to local users instead of hanging).
     services.sssd = {
       enable = true;
-      config = {
-        domains = [ "homelab.local" ];
-        services = [ "nss" "pam" "ssh" ];
-        config."domain/homelab.local" = {
-          id_provider = "ad";
-          auth_provider = "ad";
-          access_provider = "ad";
-          chpass_provider = "ad";
-          ldap_schema = "ad";
-          # Kerberos + LDAP go to the DC
-          krb5_server = "windowsnode.homelab.local";
-          krb5_realm = "HOMELAB.LOCAL";
-          ldap_uri = "ldap://windowsnode.homelab.local";
-          ldap_search_base = "DC=homelab,DC=local";
-          ad_domain = "homelab.local";
-          # Short timeouts so SSH stays fast if AD is down
-          ldap_search_timeout = 3;
-          krb5_auth_timeout = 5;
-          krb5_validate = true;
-          # Don't hang on slow DC; fall back to local auth
-          offline_credentials_expiration = 2;
-          # Create home dirs on first login
-          override_homedir = "/home/%u";
-          default_shell = "/run/current-system/sw/bin/bash";
-        };
-      };
+      config = ''
+        [sssd]
+        domains = homelab.local
+        services = nss, pam, ssh
+
+        [nss]
+        filter_groups = root
+        filter_users = root
+
+        [pam]
+
+        [domain/homelab.local]
+        id_provider = ad
+        auth_provider = ad
+        access_provider = ad
+        chpass_provider = ad
+        ldap_schema = ad
+        ad_domain = homelab.local
+        krb5_server = windowsnode.homelab.local
+        krb5_realm = HOMELAB.LOCAL
+        ldap_uri = ldap://windowsnode.homelab.local
+        ldap_search_base = DC=homelab,DC=local
+        # Short timeouts so SSH stays fast if AD is down
+        ldap_search_timeout = 3
+        krb5_auth_timeout = 5
+        krb5_validate = true
+        offline_credentials_expiration = 2
+        override_homedir = /home/%u
+        default_shell = /run/current-system/sw/bin/bash
+        use_fully_qualified_names = False
+        fallback_homedir = /home/%u
+      '';
     };
 
     # ── PAM / nsswitch ──────────────────────────────────────────────────
