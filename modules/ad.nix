@@ -97,7 +97,7 @@
     # ── PAM / nsswitch ──────────────────────────────────────────────────
     # sssd module adds nsswitch entries; pam_mkhomedir creates homes.
     security.pam.services.sshd = {
-      enableSSHAgentAuth = true;
+      sshAgentAuth = true;
       # allow AD users via PAM while local keys still work
     };
     # nsswitch is handled by services.sssd automatically (files → sss)
