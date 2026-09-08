@@ -38,6 +38,6 @@ Requires the nodes' SSH aliases in `~/.ssh/config` (see Obsidian: Home Lab - Lap
 
 ## Notes
 - `configuration.nix` files are the live ones pulled from each node on 2026-08-29 — keep them in sync by committing any manual node edits here.
-- `hashedPassword` values in configs are the node passwords from `local password vault`.
+- Node login passwords are NOT stored in this repo (SSH is key-only; console passwords live in the local password vault).
 - Kernel: all 3 use `linuxPackages_latest` (7.2.x).
 - Next steps (when hardware arrives): wire nodes to TL-SG108 switch, add UE306 adapters to node1/node2, disable WiFi, then deploy k3s via this flake.
