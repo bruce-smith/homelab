@@ -102,7 +102,7 @@
   security.sudo.extraRules = [
     { users = [ "node0" ]; commands = [ { command = "ALL"; options = [ "NOPASSWD" ];} ]; }
   ];
-  # Authorize your main PC's key for the node2 user
+  # Authorize the main PC's key for the node0 user
   users.users.node0.openssh.authorizedKeys.keys = [
     "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBJxEtzPR8FTX1YaboQzAjQGlRwL8FLblqOaaiPFrUvc victoria@home"
   ];
