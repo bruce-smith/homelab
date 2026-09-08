@@ -92,6 +92,8 @@
   security.sudo.extraRules = [
     { users = [ "node2" ]; commands = [ { command = "ALL"; options = [ "NOPASSWD" ];} ]; }
   ];
+  # Password for console/su access is managed via sops-nix (see secrets/).
+  # SSH access is key-only (PasswordAuthentication false), so no hash is stored here.
   # Enable SSH (key-only)
   services.openssh = {
     enable = true;
