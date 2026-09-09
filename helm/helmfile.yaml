@@ -54,6 +54,11 @@ releases:
         args:
           - -c
           - "sops -d values/b2-backup-secret.sops.yaml | kubectl apply -f -"
+      # Nightly 2AM RecurringJob -> Backblaze B2 (declarative since 2026-09-09)
+      - events: ["postsync"]
+        showlogs: true
+        command: kubectl
+        args: ["apply", "--server-side", "-f", "manifests/longhorn-recurringjob.yaml"]
 
   # ---- Bare-metal load balancer ----
   # MetalLB needs its IPAddressPool + L2Advertisement CRs, applied after install.

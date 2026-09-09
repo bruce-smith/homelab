@@ -1,0 +1,26 @@
+# Nightly offsite backup job for Longhorn volumes.
+# Mirrors the live RecurringJob on the cluster (created manually 2026-09-02);
+# made declarative 2026-09-09 so a cluster rebuild reproduces it.
+#
+# Schedule: every night at 2:00 AM (cron "0 2 * * *")
+# Task:     backup (snapshot + push to Backblaze B2 via the backup-target secret)
+# Retain:   7 most recent backups
+# Group:    "default" — volumes carrying the label
+#           recurring-job-group.longhorn.io/default=enabled are included.
+#
+# Requires: helm/values/b2-backup-secret.sops.yaml (B2 credentials) applied
+#           before/with the longhorn chart (presync hook in helmfile.yaml).
+apiVersion: longhorn.io/v1beta2
+kind: RecurringJob
+metadata:
+  name: nightly-backup
+  namespace: longhorn-system
+  labels:
+    longhorn.io/backup: nightly
+spec:
+  cron: "0 2 * * *"
+  task: backup
+  groups:
+    - default
+  retain: 7
+  concurrency: 2
