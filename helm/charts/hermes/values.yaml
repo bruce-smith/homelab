@@ -14,7 +14,7 @@
 # live - two Hermes instances on the same Discord bot token would contend for the
 # gateway session, duplicate every job alert, and diverge the shared profile.
 # CUTOVER = set this to 1 and apply (with the PC gateway stopped).
-replicaCount: 0
+replicaCount: 1
 
 image:
   repository: nousresearch/hermes-agent
@@ -57,9 +57,15 @@ bisyncIntervalSeconds: 300
 # Google Drive paths to mirror, as top-level names under My Drive.
 # Keep this list SMALL: bisyncing the whole Drive would pull down Google Photos
 # and other large trees for no reason. Add a line to include more.
+# Measured sizes (2026-09-14, from rclone inside the cluster): job stuff 145 MiB,
+# Obsidian vault Personal 750 KiB, Hermes Backup 180 MiB - ~326 MiB total, well
+# inside the 5Gi volume.
 gdrivePaths:
   - "job stuff"
   - "Obsidian vault Personal"
+  # Lets the hermes CLI read a backup straight from Drive after a cutover or a
+  # re-import, without kubectl cp or a helper fetch pod.
+  - "Hermes Backup"
 
 # Where the job files (apply list) live inside the container. jobfiles.py reads
 # this, so the cron prompts never hardcode a host-specific path. On the main PC
