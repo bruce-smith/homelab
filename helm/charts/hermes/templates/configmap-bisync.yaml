@@ -40,6 +40,12 @@ data:
     cp /seed/rclone.conf "$CONF"
     chmod 600 "$CONF"
 
+    # bisync writes a "<filters>.md5" hash file NEXT TO the filters file, so the
+    # filters must live somewhere writable - /scripts is a read-only ConfigMap
+    # mount, which failed with "open /scripts/filters.txt.md5: read-only file
+    # system". Copy it into the workdir instead.
+    cp /scripts/filters.txt /work/filters.txt
+
     # Bisync keeps listing state in a workdir; it lives on a persistent volume
     # so a pod restart does not lose it (losing it forces a full --resync).
     mkdir -p "$STATE/bisync"
@@ -48,7 +54,7 @@ data:
       if [ ! -f "$MARKER" ]; then
         echo "[bisync] no state marker: running initial --resync"
         if rclone --config "$CONF" bisync gdrive: /mnt/gdrive \
-             --filters-file /scripts/filters.txt \
+             --filters-file /work/filters.txt \
              --workdir "$STATE/bisync" --resync --verbose; then
           touch "$MARKER"
           echo "[bisync] initial resync complete"
@@ -58,7 +64,7 @@ data:
       else
         echo "[bisync] incremental sync"
         rclone --config "$CONF" bisync gdrive: /mnt/gdrive \
-          --filters-file /scripts/filters.txt \
+          --filters-file /work/filters.txt \
           --workdir "$STATE/bisync" --verbose \
           || echo "[bisync] sync FAILED (will retry in ${INTERVAL}s)"
       fi
