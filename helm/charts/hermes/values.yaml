@@ -9,6 +9,13 @@
 # /mnt/gdrive - see templates/configmap-bisync.yaml for why bisync instead of a
 # FUSE mount.
 
+# Replicas. 0 = STAGED: everything provisions (namespace, PVCs, ConfigMap,
+# Secret) but no pod runs. This matters because the main PC's gateway is still
+# live - two Hermes instances on the same Discord bot token would contend for the
+# gateway session, duplicate every job alert, and diverge the shared profile.
+# CUTOVER = set this to 1 and apply (with the PC gateway stopped).
+replicaCount: 0
+
 image:
   repository: nousresearch/hermes-agent
   # Pinned to the version the MAIN PC runs (Hermes Agent v0.21.0, 2026.8.31).

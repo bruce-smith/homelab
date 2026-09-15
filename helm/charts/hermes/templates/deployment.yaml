@@ -13,7 +13,7 @@ metadata:
   labels:
     app: hermes
 spec:
-  replicas: 1
+  replicas: {{ .Values.replicaCount }}
   # The data volumes are ReadWriteOnce, so two pods cannot mount them at once -
   # rolling updates would deadlock. Recreate is the correct strategy here.
   strategy:
