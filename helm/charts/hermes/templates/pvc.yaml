@@ -1,0 +1,43 @@
+# Two volumes:
+#   hermes-data   -> /opt/data   (the whole Hermes home: config, sessions, skills, cron)
+#   hermes-gdrive -> /mnt/gdrive (local mirror of selected Google Drive trees)
+#
+# Both RWO on Longhorn. Because RWO cannot be attached by two pods at once, the
+# Deployment uses strategy: Recreate (see deployment.yaml).
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: hermes-data
+  namespace: hermes-system
+spec:
+  accessModes: [ReadWriteOnce]
+  storageClassName: {{ .Values.persistence.data.storageClass }}
+  resources:
+    requests:
+      storage: {{ .Values.persistence.data.size }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: hermes-gdrive
+  namespace: hermes-system
+spec:
+  accessModes: [ReadWriteOnce]
+  storageClassName: {{ .Values.persistence.gdrive.storageClass }}
+  resources:
+    requests:
+      storage: {{ .Values.persistence.gdrive.size }}
+---
+# Holds rclone bisync's listing state. It must persist: if the listing files are
+# lost, bisync refuses to run and falls back to a full --resync.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: hermes-bisync-state
+  namespace: hermes-system
+spec:
+  accessModes: [ReadWriteOnce]
+  storageClassName: {{ .Values.persistence.bisyncState.storageClass }}
+  resources:
+    requests:
+      storage: {{ .Values.persistence.bisyncState.size }}

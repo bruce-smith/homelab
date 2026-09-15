@@ -1,0 +1,66 @@
+# rclone sidecar: keeps /mnt/gdrive in sync with selected Google Drive trees.
+#
+# WHY BISYNC, NOT `rclone mount` (decided 2026-09-14):
+#   A FUSE mount lives in the mount namespace of the container that creates it,
+#   so the Hermes container would NOT see it without `mountPropagation:
+#   Bidirectional` + a privileged sidecar. Worse, a dropped connection can leave
+#   a FUSE mount hung, which would stall the cron jobs. Bisync writes ordinary
+#   files into a shared volume instead: visible everywhere, unprivileged, and
+#   the only failure mode is staleness.
+#
+# The credentials come from the sops-encrypted Secret `rclone-gdrive`
+# (helm/values/rclone-gdrive.sops.yaml).
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rclone-bisync
+  namespace: hermes-system
+data:
+  # Include only the trees we actually need, then exclude everything else.
+  # Syncing all of My Drive would drag down Google Photos and other large,
+  # irrelevant trees. Add a line to gdrivePaths in values.yaml to add more.
+  filters.txt: |
+{{- range .Values.gdrivePaths }}
+    + /{{ . }}/**
+{{- end }}
+    - /**
+
+  bisync.sh: |
+    #!/bin/sh
+    # Mirror the selected Google Drive trees into /mnt/gdrive.
+    set -u
+
+    CONF=/work/rclone.conf
+    STATE=/state
+    MARKER="$STATE/initialised"
+    INTERVAL="${BISYNC_INTERVAL:-300}"
+
+    # The Secret is mounted read-only, but rclone MUST be able to write the
+    # refreshed access token back, otherwise the token cannot be renewed.
+    cp /seed/rclone.conf "$CONF"
+    chmod 600 "$CONF"
+
+    # Bisync keeps listing state in a workdir; it lives on a persistent volume
+    # so a pod restart does not lose it (losing it forces a full --resync).
+    mkdir -p "$STATE/bisync"
+
+    while true; do
+      if [ ! -f "$MARKER" ]; then
+        echo "[bisync] no state marker: running initial --resync"
+        if rclone --config "$CONF" bisync gdrive: /mnt/gdrive \
+             --filters-file /scripts/filters.txt \
+             --workdir "$STATE/bisync" --resync --verbose; then
+          touch "$MARKER"
+          echo "[bisync] initial resync complete"
+        else
+          echo "[bisync] initial resync FAILED (will retry in ${INTERVAL}s)"
+        fi
+      else
+        echo "[bisync] incremental sync"
+        rclone --config "$CONF" bisync gdrive: /mnt/gdrive \
+          --filters-file /scripts/filters.txt \
+          --workdir "$STATE/bisync" --verbose \
+          || echo "[bisync] sync FAILED (will retry in ${INTERVAL}s)"
+      fi
+      sleep "$INTERVAL"
+    done

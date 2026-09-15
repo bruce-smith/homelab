@@ -149,3 +149,24 @@ releases:
     version: 1.12.1
     values:
       - values/alloy.values.yaml
+
+  # ---- Hermes Agent (Victoria) ----
+  # Runs the agent 24/7 on the cluster so cron keeps working with the PC off.
+  # Local chart: Deployment (hermes + rclone sidecar), 3 Longhorn PVCs, the
+  # rclone bisync ConfigMap. Google Drive is mirrored into /mnt/gdrive by bisync
+  # so the job scripts read ordinary file paths there.
+  #
+  # The Drive credentials (rclone.conf) are sops-encrypted in
+  # values/rclone-gdrive.sops.yaml and applied by the presync hook - same
+  # pattern as longhorn's b2-backup-secret. The Secret must exist before the
+  # pod schedules, hence presync.
+  - name: hermes
+    namespace: hermes-system
+    chart: ./charts/hermes
+    hooks:
+      - events: ["presync"]
+        showlogs: true
+        command: sh
+        args:
+          - -c
+          - "sops -d values/rclone-gdrive.sops.yaml | kubectl apply -f -"

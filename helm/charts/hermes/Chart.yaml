@@ -1,0 +1,6 @@
+apiVersion: v2
+name: hermes
+description: Hermes Agent (Victoria) on the homelab k3s cluster, with an rclone sidecar that keeps Google Drive available at /mnt/gdrive
+type: application
+version: 0.1.0
+appVersion: "v2026.8.31"

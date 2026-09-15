@@ -1,0 +1,124 @@
+{{/* Hermes Agent + rclone sidecar.
+   - hermes: the agent/gateway. Inside the official image `gateway run` is
+     supervised by s6-overlay, so a crashed gateway is restarted in ~2s without
+     killing the pod. That is why there are no liveness probes here.
+   - rclone: mirrors selected Google Drive trees into the shared gdrive volume,
+     so cron scripts can read the job files as ordinary paths under /mnt/gdrive.
+*/}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hermes
+  namespace: hermes-system
+  labels:
+    app: hermes
+spec:
+  replicas: 1
+  # The data volumes are ReadWriteOnce, so two pods cannot mount them at once -
+  # rolling updates would deadlock. Recreate is the correct strategy here.
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: hermes
+  template:
+    metadata:
+      labels:
+        app: hermes
+    spec:
+      # node1 has ~3.7GB RAM and is deliberately excluded.
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: kubernetes.io/hostname
+                    operator: In
+                    values:
+{{- range .Values.nodeAffinity.values }}
+                      - {{ . }}
+{{- end }}
+      securityContext:
+        fsGroup: {{ .Values.pgid }}
+      containers:
+        - name: hermes
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          # Mirrors `docker run nousresearch/hermes-agent gateway run`.
+          # If a future image moves the subcommand into ENTRYPOINT, change this
+          # to `command:` instead.
+          args: ["gateway", "run"]
+          env:
+            - name: PUID
+              value: "{{ .Values.puid }}"
+            - name: PGID
+              value: "{{ .Values.pgid }}"
+            # All persistent state lives in this one directory (config, .env,
+            # sessions, skills, memories, cron, scripts).
+            - name: HERMES_HOME
+              value: /opt/data
+          ports:
+            - name: api
+              containerPort: 8642
+              protocol: TCP
+          volumeMounts:
+            - name: data
+              mountPath: /opt/data
+            - name: gdrive
+              mountPath: /mnt/gdrive
+            # Playwright needs shared memory (docker's --shm-size=1g).
+            - name: shm
+              mountPath: /dev/shm
+          resources:
+{{ toYaml .Values.resources.hermes | indent 12 }}
+
+        - name: rclone
+          image: "{{ .Values.rclone.repository }}:{{ .Values.rclone.tag }}"
+          imagePullPolicy: IfNotPresent
+          command: ["/bin/sh", "/scripts/bisync.sh"]
+          env:
+            - name: BISYNC_INTERVAL
+              value: "{{ .Values.bisyncIntervalSeconds }}"
+          volumeMounts:
+            # rclone.conf lives in the sops-encrypted Secret. Read-only: the
+            # script copies it to /work first because rclone must write the
+            # refreshed access token back.
+            - name: rclone-seed
+              mountPath: /seed
+              readOnly: true
+            - name: scripts
+              mountPath: /scripts
+              readOnly: true
+            - name: rclone-work
+              mountPath: /work
+            - name: bisync-state
+              mountPath: /state
+            - name: gdrive
+              mountPath: /mnt/gdrive
+          resources:
+{{ toYaml .Values.resources.rclone | indent 12 }}
+
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: hermes-data
+        - name: gdrive
+          persistentVolumeClaim:
+            claimName: hermes-gdrive
+        - name: bisync-state
+          persistentVolumeClaim:
+            claimName: hermes-bisync-state
+        - name: rclone-seed
+          secret:
+            secretName: rclone-gdrive
+            defaultMode: 0400
+        - name: rclone-work
+          emptyDir: {}
+        - name: scripts
+          configMap:
+            name: rclone-bisync
+            defaultMode: 0755
+        - name: shm
+          emptyDir:
+            medium: Memory
+            sizeLimit: {{ .Values.shmSize }}

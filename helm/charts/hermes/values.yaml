@@ -1,0 +1,80 @@
+# Hermes Agent on k3s.
+#
+# Data layout inside the container (per the official Docker docs): ALL user data
+# (config, .env, sessions, skills, memories, cron, scripts) lives in a single
+# directory mounted at /opt/data. The image is stateless, so a new image tag is
+# a drop-in upgrade.
+#
+# Google Drive is provided by the `rclone` sidecar as plain files under
+# /mnt/gdrive - see templates/configmap-bisync.yaml for why bisync instead of a
+# FUSE mount.
+
+image:
+  repository: nousresearch/hermes-agent
+  # Pinned to the version the MAIN PC runs (Hermes Agent v0.21.0, 2026.8.31).
+  # Rationale: this is a MIGRATION of an existing profile (memories, config,
+  # cron/jobs.json, state.db, skills). Copying that profile onto a newer image
+  # could trigger schema migrations mid-move and make rollback messy. Move
+  # first on the matching version, then upgrade deliberately afterwards.
+  # Newer tags available: v2026.9.7, v2026.9.11, v2026.9.14.
+  tag: "v2026.8.31"
+  pullPolicy: IfNotPresent
+
+rclone:
+  repository: rclone/rclone
+  # Matches the rclone version verified locally against this Drive account.
+  tag: "1.75.1"
+
+# Container uid/gid the Hermes data volume is owned by. Must match the uid that
+# writes into the Longhorn volume, otherwise "Permission denied" on /opt/data.
+puid: 1000
+pgid: 1000
+
+persistence:
+  data:
+    size: 10Gi
+    storageClass: longhorn
+  # Local mirror of the selected Google Drive trees. Lives on Longhorn so it
+  # survives pod rescheduling; contents are re-synced from Drive anyway.
+  gdrive:
+    size: 5Gi
+    storageClass: longhorn
+  # rclone bisync listing state - must persist or bisync loses its baseline.
+  bisyncState:
+    size: 1Gi
+    storageClass: longhorn
+
+# Seconds between rclone bisync runs. Lower = fresher files, more API calls.
+bisyncIntervalSeconds: 300
+
+# Google Drive paths to mirror, as top-level names under My Drive.
+# Keep this list SMALL: bisyncing the whole Drive would pull down Google Photos
+# and other large trees for no reason. Add a line to include more.
+gdrivePaths:
+  - "job stuff"
+  - "Obsidian vault Personal"
+
+# node1 has ~3.7GB RAM and is deliberately avoided.
+nodeAffinity:
+  values:
+    - node0
+    - node2
+
+resources:
+  hermes:
+    requests:
+      cpu: 500m
+      memory: 512Mi
+    limits:
+      cpu: "1"
+      memory: 1Gi
+  rclone:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+# Browser tools need shared memory (Playwright). Docker equivalent: --shm-size=1g
+shmSize: 1Gi
