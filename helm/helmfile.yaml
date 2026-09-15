@@ -164,9 +164,14 @@ releases:
     namespace: hermes-system
     chart: ./charts/hermes
     hooks:
+      # The namespace is created FIRST: on a fresh cluster the Secret apply would
+      # otherwise fail with "namespaces \"hermes-system\" not found", because
+      # helm only creates the namespace during the release install - which runs
+      # after presync hooks. (longhorn's equivalent hook gets away with it only
+      # because longhorn-system already exists by then.)
       - events: ["presync"]
         showlogs: true
         command: sh
         args:
           - -c
-          - "sops -d values/rclone-gdrive.sops.yaml | kubectl apply -f -"
+          - "kubectl create namespace hermes-system --dry-run=client -o yaml | kubectl apply -f - && sops -d values/rclone-gdrive.sops.yaml | kubectl apply -f -"
