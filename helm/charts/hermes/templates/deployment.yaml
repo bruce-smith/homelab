@@ -57,6 +57,14 @@ spec:
             # sessions, skills, memories, cron, scripts).
             - name: HERMES_HOME
               value: /opt/data
+            # The apply list is a Drive file; jobfiles.py resolves this so the
+            # cron prompts stay host-independent.
+            - name: JOB_FILES_DIR
+              value: "{{ .Values.jobFilesDir }}"
+            # No mbox exists in the container, so skip straight to IMAP rather
+            # than probing a Windows path that will never be there.
+            - name: JOB_MAIL_SOURCE
+              value: "imap"
           ports:
             - name: api
               containerPort: 8642

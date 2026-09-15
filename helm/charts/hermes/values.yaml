@@ -54,6 +54,11 @@ gdrivePaths:
   - "job stuff"
   - "Obsidian vault Personal"
 
+# Where the job files (apply list) live inside the container. jobfiles.py reads
+# this, so the cron prompts never hardcode a host-specific path. On the main PC
+# the variable is unset and the script auto-detects G:/My Drive/job stuff.
+jobFilesDir: "/mnt/gdrive/job stuff"
+
 # node1 has ~3.7GB RAM and is deliberately avoided.
 nodeAffinity:
   values:
