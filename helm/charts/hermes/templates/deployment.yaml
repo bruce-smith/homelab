@@ -65,6 +65,10 @@ spec:
             # than probing a Windows path that will never be there.
             - name: JOB_MAIL_SOURCE
               value: "imap"
+            # Allow write_file/patch to touch the Drive mirror (Obsidian
+            # vault, job files) in addition to $HERMES_HOME. Multi-path list.
+            - name: HERMES_WRITE_SAFE_ROOT
+              value: "{{ .Values.writeSafeRoot }}"
           ports:
             - name: api
               containerPort: 8642
@@ -83,6 +87,12 @@ spec:
         - name: rclone
           image: "{{ .Values.rclone.repository }}:{{ .Values.rclone.tag }}"
           imagePullPolicy: IfNotPresent
+          # Must match the pod PUID/PGID: files it downloads are then owned
+          # by uid 1000 so the hermes container can write them (it could not
+          # when the sidecar ran as root). Found 2026-09-15.
+          securityContext:
+            runAsUser: 1000
+            runAsGroup: 1000
           command: ["/bin/sh", "/scripts/bisync.sh"]
           env:
             - name: BISYNC_INTERVAL
