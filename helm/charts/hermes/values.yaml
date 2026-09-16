@@ -75,6 +75,10 @@ jobFilesDir: "/mnt/gdrive/job stuff"
 # Default is $HERMES_HOME; the Drive mirror must be listed or the Obsidian
 # vault / job files are read-only for the agent. Verified needed 2026-09-15.
 writeSafeRoot: "/opt/data:/mnt/gdrive"
+# Container timezone: cron expressions like '0 19 * * *' evaluate in this
+# zone. Without it the UTC container re-based the daily digest to 19:00 UTC
+# (2 pm CDT). Verified 2026-09-16.
+timezone: "America/Chicago"
 
 # node1 has ~3.7GB RAM and is deliberately avoided.
 nodeAffinity:

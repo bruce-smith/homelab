@@ -69,6 +69,8 @@ spec:
             # vault, job files) in addition to $HERMES_HOME. Multi-path list.
             - name: HERMES_WRITE_SAFE_ROOT
               value: "{{ .Values.writeSafeRoot }}"
+            - name: TZ
+              value: "{{ .Values.timezone }}"
           ports:
             - name: api
               containerPort: 8642
