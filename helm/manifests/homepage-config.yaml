@@ -35,6 +35,11 @@ data:
             description: PXE / network boot
             server: http://netbootxyz.netbootxyz-system.svc.cluster.local
     - Cluster:
+        - Hermes:
+            icon: hermes
+            href: http://hermes.home
+            description: Agent dashboard
+            server: http://hermes.hermes-system.svc.cluster.local:9119
         - Longhorn:
             icon: longhorn
             href: http://longhorn.home

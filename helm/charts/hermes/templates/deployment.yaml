@@ -71,10 +71,27 @@ spec:
               value: "{{ .Values.writeSafeRoot }}"
             - name: TZ
               value: "{{ .Values.timezone }}"
+{{- if .Values.dashboard.enabled }}
+            # s6 in the official image starts the web dashboard (9119)
+            # alongside the gateway when HERMES_DASHBOARD=1.
+            - name: HERMES_DASHBOARD
+              value: "1"
+{{- end }}
+          envFrom:
+{{- if .Values.dashboard.enabled }}
+            # Credentials: sops-encrypted Secret applied by the presync hook.
+            - secretRef:
+                name: hermes-dashboard-auth
+{{- end }}
           ports:
             - name: api
               containerPort: 8642
               protocol: TCP
+{{- if .Values.dashboard.enabled }}
+            - name: dashboard
+              containerPort: {{ .Values.dashboard.port }}
+              protocol: TCP
+{{- end }}
           volumeMounts:
             - name: data
               mountPath: /opt/data

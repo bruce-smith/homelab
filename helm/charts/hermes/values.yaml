@@ -80,6 +80,15 @@ writeSafeRoot: "/opt/data:/mnt/gdrive"
 # (2 pm CDT). Verified 2026-09-16.
 timezone: "America/Chicago"
 
+# Web dashboard (hermes.home). HERMES_DASHBOARD=1 makes the s6 supervisor
+# in the official image start the dashboard (port 9119) alongside the
+# gateway. Login credentials come from the hermes-dashboard-auth Secret,
+# sops-encrypted in values/hermes-dashboard-auth.sops.yaml and applied by
+# the helmfile presync hook. The repo is public - never a plaintext password.
+dashboard:
+  enabled: true
+  port: 9119
+
 # node1 has ~3.7GB RAM and is deliberately avoided.
 nodeAffinity:
   values:
