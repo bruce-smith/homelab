@@ -150,6 +150,22 @@ releases:
     values:
       - values/alloy.values.yaml
 
+  # ---- Cluster ops toolkit (in-cluster management, PC bridge optional) ----
+  # Runs kubectl/helm/helmfile/sops/age/nixos-anywhere inside the cluster;
+  # the Hermes pod reaches it over ssh (authorized_keys = hermes pod pubkey).
+  # The age keys Secret is sops-encrypted in values/ops-age-keys.sops.yaml
+  # and applied by the presync hook (namespace first, same as hermes).
+  - name: ops
+    namespace: ops
+    chart: ./charts/ops
+    hooks:
+      - events: ["presync"]
+        showlogs: true
+        command: sh
+        args:
+          - -c
+          - "kubectl create namespace ops --dry-run=client -o yaml | kubectl apply -f - && sops -d values/ops-age-keys.sops.yaml | kubectl apply -f -"
+
   # ---- Hermes Agent (Victoria) ----
   # Runs the agent 24/7 on the cluster so cron keeps working with the PC off.
   # Local chart: Deployment (hermes + rclone sidecar), 3 Longhorn PVCs, the

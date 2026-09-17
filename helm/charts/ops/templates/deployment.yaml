@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ops
+  namespace: ops
+  labels:
+    app: ops
+spec:
+  replicas: 1
+  # sshd host keys are ephemeral; no rolling-update benefit.
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: ops
+  template:
+    metadata:
+      labels:
+        app: ops
+    spec:
+      serviceAccountName: ops-sa
+      # The image is only imported on node0 - pin there.
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: kubernetes.io/hostname
+                    operator: In
+                    values:
+                      - node0
+      containers:
+        - name: ops
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: ssh
+              containerPort: 22
+          volumeMounts:
+            # Age private keys - sops needs these at their default path.
+            - name: age-keys
+              mountPath: /root/.config/sops/age/keys.txt
+              subPath: keys.txt
+              readOnly: true
+      volumes:
+        - name: age-keys
+          secret:
+            secretName: ops-age-keys

@@ -1,0 +1,5 @@
+apiVersion: v2
+name: ops
+description: In-cluster cluster-management toolkit (kubectl/helm/helmfile/sops/age/nixos-anywhere) with sshd
+type: application
+version: 0.1.0

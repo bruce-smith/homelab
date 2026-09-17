@@ -1,0 +1,5 @@
+# Image built on the PC (ops/Dockerfile) and ctr-imported into node0.
+image:
+  repository: homelab/cluster-ops
+  tag: "latest"
+  pullPolicy: IfNotPresent
