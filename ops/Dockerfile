@@ -11,8 +11,10 @@
 FROM docker.io/nixos/nix:latest
 
 # All tools via the Nix package manager (single source, reproducible).
+# --extra-experimental-features: the nixos/nix image does not enable
+# nix-command by default.
 # openssh ships sshd + ssh; python3 for helper scripts; bash is the shell.
-RUN nix profile install \
+RUN nix --extra-experimental-features "nix-command flakes" profile add \
       nixpkgs#kubectl \
       nixpkgs#helm \
       nixpkgs#helmfile \
