@@ -24,6 +24,13 @@ AuthorizedKeysFile .ssh/authorized_keys
 EOF
 fi
 
+# sshd also requires its privilege-separation user, which no container image
+# ships in /etc/passwd.
+if ! grep -q '^sshd:' /etc/passwd; then
+  echo 'sshd:x:74:74:Privilege-separated SSH:/var/empty/sshd:/sbin/nologin' >> /etc/passwd
+  mkdir -p /var/empty/sshd
+fi
+
 # --- kubeconfig from the in-cluster ServiceAccount token ---
 if [ -f /var/run/secrets/kubernetes.io/serviceaccount/token ]; then
   SA_DIR=/var/run/secrets/kubernetes.io/serviceaccount
