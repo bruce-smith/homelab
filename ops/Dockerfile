@@ -16,7 +16,7 @@ FROM docker.io/nixos/nix:latest
 # openssh (sshd included) and wget - do NOT add them or nix profile conflicts.
 RUN nix --extra-experimental-features "nix-command flakes" profile add \
       nixpkgs#kubectl \
-      nixpkgs#helm \
+      nixpkgs#kubernetes-helm \
       nixpkgs#helmfile \
       nixpkgs#sops \
       nixpkgs#age \

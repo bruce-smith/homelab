@@ -28,6 +28,8 @@ data:
     PubkeyAuthentication yes
     PasswordAuthentication no
     AuthorizedKeysFile .ssh/authorized_keys
+    # SSH sessions reset PATH; make the nix profile tools available.
+    SetEnv PATH=/root/.nix-profile/bin:/usr/bin:/bin
     EOF
     fi
     
@@ -38,15 +40,29 @@ data:
       mkdir -p /var/empty/sshd
     fi
     
-    # OpenSSH 10 treats 'root:x:...' with no /etc/shadow as a LOCKED account
-    # ("User root not allowed because account is locked"). Empty password field =
-    # unlocked; PasswordAuthentication is off, so only pubkey auth applies.
-    # (grep/mv used deliberately - the base image has no sed.)
-    if grep -q '^root:x:' /etc/passwd; then
-      grep -v '^root:x:' /etc/passwd > /tmp/passwd.new
-      echo 'root::0:0:root:/root:/bin/bash' >> /tmp/passwd.new
-      mv /tmp/passwd.new /etc/passwd
-    fi
+    # OpenSSH 9.8+ treats 'root:x:...' (no shadow) and empty-password accounts as
+    # LOCKED ("User root not allowed because account is locked"). Rewrite root's
+    # entry unconditionally with a static throwaway hash (mkpasswd -m sha-512;
+    # PasswordAuthentication=no means it can never be used). Single-quoted so the
+    # shell doesn't expand $6$...; python3 crypt is gone in 3.13, hence static.
+    HASH='$6$7JlBtOCF/x/eVzh7$N/n/EWQ6.VtS87YcLgJ7WI5gLcFpSLGKIo81jdJdBA9oAf7bEVHVWd6K42vcedYUDekt4MBzCeUjalNjo3vV5.'
+    # ...and the image has no /bin/bash (nix bash lives in the store) - sshd
+    # rejects users whose shell doesn't exist. Resolve the real bash at runtime.
+    SHELL_PATH=$(command -v bash 2>/dev/null || echo /bin/sh)
+    grep -v '^root:' /etc/passwd > /tmp/passwd.new
+    echo "root:$HASH:0:0:root:/root:$SHELL_PATH" >> /tmp/passwd.new
+    mv /tmp/passwd.new /etc/passwd
+    
+    # Shadow-aware sshd (USE_SHADOW) ignores pw_passwd and uses getspnam() - and
+    # this image's /etc/shadow is a READ-ONLY store symlink whose root entry is
+    # LOCKED ('!') -> "User root not allowed because account is locked". Replace
+    # the symlink unconditionally with a real file carrying root's throwaway hash
+    # (+ sshd user, locked is fine for the privsep user).
+    rm -f /etc/shadow
+    echo "root:$HASH:19000:0:99999:7:::" > /etc/shadow
+    echo "sshd:*:19000:0:99999:7:::" >> /etc/shadow
+    chmod 640 /etc/shadow
+    chown root:shadow /etc/shadow 2>/dev/null || chown root:root /etc/shadow
     
     # --- kubeconfig from the in-cluster ServiceAccount token ---
     if [ -f /var/run/secrets/kubernetes.io/serviceaccount/token ]; then
