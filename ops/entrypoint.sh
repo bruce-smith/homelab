@@ -31,6 +31,13 @@ if ! grep -q '^sshd:' /etc/passwd; then
   mkdir -p /var/empty/sshd
 fi
 
+# OpenSSH 10 treats 'root:x:...' with no /etc/shadow as a LOCKED account
+# ("User root not allowed because account is locked"). Empty password field =
+# unlocked; PasswordAuthentication is off, so only pubkey auth applies.
+if grep -q '^root:x:' /etc/passwd; then
+  sed -i 's/^root:x:/root::/' /etc/passwd
+fi
+
 # --- kubeconfig from the in-cluster ServiceAccount token ---
 if [ -f /var/run/secrets/kubernetes.io/serviceaccount/token ]; then
   SA_DIR=/var/run/secrets/kubernetes.io/serviceaccount
