@@ -52,6 +52,9 @@ spec:
         - name: entrypoint
           configMap:
             name: ops-entrypoint
+            # ConfigMap files default to 0444 - without this, exec of
+            # /entrypoint.sh fails with 'permission denied'.
+            defaultMode: 0755
         - name: age-keys
           secret:
             secretName: ops-age-keys
