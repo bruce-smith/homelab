@@ -37,12 +37,21 @@ spec:
             - name: ssh
               containerPort: 22
           volumeMounts:
+            # Entrypoint lives in a ConfigMap so script fixes don't need
+            # an image rebuild (shadow the baked copy).
+            - name: entrypoint
+              mountPath: /entrypoint.sh
+              subPath: entrypoint.sh
+              readOnly: true
             # Age private keys - sops needs these at their default path.
             - name: age-keys
               mountPath: /root/.config/sops/age/keys.txt
               subPath: keys.txt
               readOnly: true
       volumes:
+        - name: entrypoint
+          configMap:
+            name: ops-entrypoint
         - name: age-keys
           secret:
             secretName: ops-age-keys

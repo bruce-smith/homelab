@@ -34,8 +34,11 @@ fi
 # OpenSSH 10 treats 'root:x:...' with no /etc/shadow as a LOCKED account
 # ("User root not allowed because account is locked"). Empty password field =
 # unlocked; PasswordAuthentication is off, so only pubkey auth applies.
+# (grep/mv used deliberately - the base image has no sed.)
 if grep -q '^root:x:' /etc/passwd; then
-  sed -i 's/^root:x:/root::/' /etc/passwd
+  grep -v '^root:x:' /etc/passwd > /tmp/passwd.new
+  echo 'root::0:0:root:/root:/bin/bash' >> /tmp/passwd.new
+  mv /tmp/passwd.new /etc/passwd
 fi
 
 # --- kubeconfig from the in-cluster ServiceAccount token ---
