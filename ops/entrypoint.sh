@@ -6,8 +6,23 @@ set -e
 export PATH="/root/.nix-profile/bin:$PATH"
 
 # --- sshd host keys (generated once per pod start; ephemeral is fine) ---
-mkdir -p /run/sshd
+mkdir -p /etc/ssh /run/sshd
 ssh-keygen -A 2>/dev/null || true
+
+# The nixos/nix base image ships openssh but no /etc/ssh/sshd_config - sshd
+# refuses to start without one.
+if [ ! -f /etc/ssh/sshd_config ]; then
+  cat > /etc/ssh/sshd_config <<'EOF'
+Port 22
+HostKey /etc/ssh/ssh_host_rsa_key
+HostKey /etc/ssh/ssh_host_ecdsa_key
+HostKey /etc/ssh/ssh_host_ed25519_key
+PermitRootLogin prohibit-password
+PubkeyAuthentication yes
+PasswordAuthentication no
+AuthorizedKeysFile .ssh/authorized_keys
+EOF
+fi
 
 # --- kubeconfig from the in-cluster ServiceAccount token ---
 if [ -f /var/run/secrets/kubernetes.io/serviceaccount/token ]; then
