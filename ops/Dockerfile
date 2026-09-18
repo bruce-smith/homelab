@@ -8,7 +8,7 @@
 # Build (on the PC):  docker build -t homelab/cluster-ops:latest ops/
 # Distribute:         docker save homelab/cluster-ops:latest -o ops.tar
 #                     scp ops.tar node0: && ssh node0 ctr -n k8s.io images import ops.tar
-FROM nixos/nix:latest
+FROM docker.io/nixos/nix:latest
 
 # All tools via the Nix package manager (single source, reproducible).
 # openssh ships sshd + ssh; python3 for helper scripts; bash is the shell.
