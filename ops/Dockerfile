@@ -12,17 +12,14 @@ FROM docker.io/nixos/nix:latest
 
 # All tools via the Nix package manager (single source, reproducible).
 # --extra-experimental-features: the nixos/nix image does not enable
-# nix-command by default.
-# openssh ships sshd + ssh; python3 for helper scripts; bash is the shell.
+# nix-command by default. The base image already ships bash, curl, git-minimal,
+# openssh (sshd included) and wget - do NOT add them or nix profile conflicts.
 RUN nix --extra-experimental-features "nix-command flakes" profile add \
       nixpkgs#kubectl \
       nixpkgs#helm \
       nixpkgs#helmfile \
       nixpkgs#sops \
       nixpkgs#age \
-      nixpkgs#git \
-      nixpkgs#openssh \
-      nixpkgs#curl \
       nixpkgs#jq \
       nixpkgs#python3
 
