@@ -24,8 +24,7 @@ RUN nix --extra-experimental-features "nix-command flakes" profile add \
       nixpkgs#openssh \
       nixpkgs#curl \
       nixpkgs#jq \
-      nixpkgs#python3 \
-      nixpkgs#bash
+      nixpkgs#python3
 
 # The Hermes pod's public key - the only client allowed to log in. This is a
 # PUBLIC key (safe in the repo); the private half stays in /opt/data/.ssh on
