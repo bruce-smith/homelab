@@ -95,10 +95,3 @@ Never use `nixpkgs#helm` (it resolves to ancient 0.9.0); use `nixpkgs#kubernetes
   ```
   Next loop iteration runs a fresh resync (uid 1000, clean).
 - The filters `.md5` hash is written next to the filters file; it survives restarts because it is in `/state`.
-
-## Portfolio website (brucesmith.codes)
-
-**Separate repo** at `C:\Users\cat126\source\repos\PortfolioV2` (Astro 7 + Tailwind, Cloudflare Pages).  
-- Blog posts use numbered slugs (`12-hermes-agent-cluster-migration.md`); drafts go to `src/content/blog/` AND `Drafts/` with frontmatter `draft: true`.
-- The homelab repo is referenced by commit hash in `commits:` frontmatter — verify hashes from `git log` before publishing.
-- Word choice: "set up" NOT "stood up" (user-corrected). No phone number on the site.
