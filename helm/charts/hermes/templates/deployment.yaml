@@ -40,6 +40,9 @@ spec:
 {{- end }}
       securityContext:
         fsGroup: {{ .Values.pgid }}
+        # Default "Always" re-chowns every file on each mount; on HDD-backed
+        # Longhorn that blocked pod start for 40+ min after a power outage.
+        fsGroupChangePolicy: OnRootMismatch
       containers:
         - name: hermes
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
