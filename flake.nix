@@ -28,6 +28,7 @@
           ./modules/k3s.nix
           ./modules/tailscale.nix
           ./modules/ad.nix
+          ./modules/dns-fallback.nix
           # sops-nix module: reads secrets/*.yaml on the node at activation
           sops-nix.nixosModules.sops
         ];
