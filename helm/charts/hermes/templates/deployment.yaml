@@ -74,6 +74,12 @@ spec:
               value: "{{ .Values.writeSafeRoot }}"
             - name: TZ
               value: "{{ .Values.timezone }}"
+            # uv (Hermes' Python package manager) caches wheels under $HOME
+            # by default; that crawled past 800K files on the HDD-backed
+            # Longhorn volume and stalled restarts. Keep the cache in RAM
+            # (tmpfs dies with the pod, never touches disk).
+            - name: UV_CACHE_DIR
+              value: /dev/shm/uv-cache
 {{- if .Values.dashboard.enabled }}
             # s6 in the official image starts the web dashboard (9119)
             # alongside the gateway when HERMES_DASHBOARD=1.
