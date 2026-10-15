@@ -153,4 +153,10 @@
   # SSSD + Kerberos + chrony NTP. One-time: sudo realm join homelab.local.
   homelab.ad.enable = true;
 
+  # Prevent laptop from suspending when lid is closed or on idle
+  services.logind.extraConfig = ''
+    HandleLidSwitch = "ignore"
+    HandleLidSwitchExternalPower = "ignore"
+    HandleLidSwitchDocked = "ignore"
+  '';
 }

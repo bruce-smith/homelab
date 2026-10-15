@@ -154,4 +154,11 @@
   # AD join prep — SSSD + Kerberos + chrony NTP (2026-09-05)
   # One-time: sudo adcli join homelab.local -U join (password via stdin)
   homelab.ad.enable = true;
+
+  # Prevent laptop from suspending when lid is closed or on idle
+  services.logind.extraConfig = ''
+    HandleLidSwitch = "ignore"
+    HandleLidSwitchExternalPower = "ignore"
+    HandleLidSwitchDocked = "ignore"
+  '';
 }
